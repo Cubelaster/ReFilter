@@ -105,6 +105,12 @@ namespace ReFilter.ReFilterActions
             };
         }
 
+        public IQueryable<T> ApplyPagination<T>(IQueryable<T> query, BasePagedRequest pagedRequest) where T : class, new()
+        {
+            int skip = pagedRequest.PageIndex * pagedRequest.PageSize;
+            return query.Skip(skip).Take(pagedRequest.PageSize);
+        }
+
         #endregion Pagination
 
         #region Filtering
@@ -181,6 +187,39 @@ namespace ReFilter.ReFilterActions
                 Results = new List<U>(),
                 ResultQuery = null
             };
+        }
+
+        public IQueryable<T> FilterObject<T>(IQueryable<T> query, PagedRequest request) where T : class, new()
+        {
+            var filterObjectType = reFilterTypeMatcher.GetMatchingType<T>();
+            var filterObject = request.Where.ToObject(filterObjectType);
+
+            var filterValues = filterObject.GetObjectPropertiesWithValue();
+            var specialFilterProperties = filterObjectType.GetSpecialFilterProperties();
+
+            if (filterValues.Keys.Any())
+            {
+                filterValues.Keys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk)).ToList().ForEach(fv =>
+                {
+                    var selectedPfc = request.PropertyFilterConfigs?.FirstOrDefault(pfc => pfc.PropertyName == fv)
+                    ?? new PropertyFilterConfig
+                    {
+                        PropertyName = fv
+                    };
+                    selectedPfc.Value = filterValues[fv];
+
+                    var predicate = ReFilterExpressionBuilder.ReFilterExpressionBuilder.BuildPredicate<T>(selectedPfc);
+                    query = query.Where(predicate);
+                });
+
+                if (filterValues.Keys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                {
+                    var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
+                    query = filterBuilder.BuildFilteredQuery(query, filterObject as IReFilterRequest);
+                }
+            }
+
+            return query;
         }
 
         #endregion Filtering
@@ -293,12 +332,6 @@ namespace ReFilter.ReFilterActions
 
         #endregion SearchQueries
 
-        public IQueryable<T> ApplyPagination<T>(IQueryable<T> query, BasePagedRequest pagedRequest) where T : class, new()
-        {
-            int skip = pagedRequest.PageIndex * pagedRequest.PageSize;
-            return query.Skip(skip).Take(pagedRequest.PageSize);
-        }
-
         #region Sorts
 
         private IOrderedQueryable<T> OrderBy<T>(IQueryable<T> source, string propertyName, string methodName) where T : class, new()
@@ -352,38 +385,5 @@ namespace ReFilter.ReFilterActions
         }
 
         #endregion Sorts
-
-        public IQueryable<T> FilterObject<T>(IQueryable<T> query, PagedRequest request) where T : class, new()
-        {
-            var filterObjectType = reFilterTypeMatcher.GetMatchingType<T>();
-            var filterObject = request.Where.ToObject(filterObjectType);
-
-            var filterValues = filterObject.GetObjectPropertiesWithValue();
-            var specialFilterProperties = filterObjectType.GetSpecialFilterProperties();
-
-            if (filterValues.Keys.Any())
-            {
-                filterValues.Keys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk)).ToList().ForEach(fv =>
-                {
-                    var selectedPfc = request.PropertyFilterConfigs?.FirstOrDefault(pfc => pfc.PropertyName == fv)
-                    ?? new PropertyFilterConfig
-                    {
-                        PropertyName = fv
-                    };
-                    selectedPfc.Value = filterValues[fv];
-
-                    var predicate = ReFilterExpressionBuilder.ReFilterExpressionBuilder.BuildPredicate<T>(selectedPfc);
-                    query = query.Where(predicate);
-                });
-
-                if (filterValues.Keys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
-                {
-                    var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
-                    query = filterBuilder.BuildFilteredQuery(query, filterObject as IReFilterRequest);
-                }
-            }
-
-            return query;
-        }
     }
 }

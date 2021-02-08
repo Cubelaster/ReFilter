@@ -33,9 +33,17 @@ namespace ReFilter.Models
 
         public PagedRequest GetPagedRequest(bool returnQueryOnly = false, bool returnResultsOnly = false)
         {
-            var pagedRequest = (PagedRequest)MemberwiseClone();
-            pagedRequest.ReturnQueryOnly = returnQueryOnly;
-            pagedRequest.ReturnResultsOnly = returnResultsOnly;
+            var pagedRequest = new PagedRequest
+            {
+                PageIndex = PageIndex,
+                PageSize = PageSize,
+                PropertyFilterConfigs = PropertyFilterConfigs,
+                SearchQuery = SearchQuery,
+                Sorting = Sorting,
+                Where = Where,
+                ReturnQueryOnly = returnQueryOnly,
+                ReturnResultsOnly = returnResultsOnly
+            };
 
             return pagedRequest;
         }

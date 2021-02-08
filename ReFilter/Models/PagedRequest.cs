@@ -5,6 +5,23 @@ namespace ReFilter.Models
 {
     public class PagedRequest : BasePagedRequest
     {
+        public PagedRequest()
+        {
+
+        }
+
+        public PagedRequest(BasePagedRequest pagedRequest)
+        {
+            PageIndex = pagedRequest.PageIndex;
+            PageSize = pagedRequest.PageSize;
+            PropertyFilterConfigs = pagedRequest.PropertyFilterConfigs;
+            SearchQuery = SearchQuery;
+            Sorting = pagedRequest.Sorting;
+            Where = pagedRequest.Where;
+            ReturnQueryOnly = false;
+            ReturnResultsOnly = true;
+        }
+
         public bool ReturnQueryOnly { get; set; } = false;
         public bool ReturnResultsOnly { get; set; } = false;
     }

@@ -11,6 +11,10 @@ using ReFilter.Utilities;
 
 namespace ReFilter.Extensions
 {
+    /// <summary>
+    /// Optional static implementation
+    /// Used to be main implementation but not good enough
+    /// </summary>
     public static class IQueryableExtensions
     {
         #region Pagination
