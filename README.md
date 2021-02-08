@@ -90,7 +90,7 @@ My personal opinion is that you should split Filter and EF models (ViewModels as
 
 ### 2. PropertyFilterConfig
 Second is an additional config for different type of filtering.  
-There is a *PropertyFilterConfigs* inseide a *BasePagedRequest* class used for fine tuning the filter.
+There is a *PropertyFilterConfigs* inside a *BasePagedRequest* class used for fine tuning the filter.
 It basically sets the mode.  
 Available modes are inside *OperatorComparer* enum (Contains, Equals, StartsWith...).  
 Default is Equals and you can override it by setting PropertyFilterConfig for that property:
