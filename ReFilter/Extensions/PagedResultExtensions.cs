@@ -17,7 +17,7 @@ namespace ReFilter.Extensions
                 RowCount = pagedResult.RowCount
             };
 
-            newPagedResult.Results = mapFunction(pagedResult.Results);
+            newPagedResult.Results = mapFunction(pagedResult.Results ?? new List<T>());
 
             return newPagedResult;
         }
