@@ -93,16 +93,19 @@ namespace ReFilter.ReFilterActions
                 result.RowCount = query.Count();
                 result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
 
-                result.Results = pagedRequest.ReturnQueryOnly ? new List<T>() : await Task.FromResult(resultQuery.ToList());
                 result.ResultQuery = pagedRequest.ReturnResultsOnly ? null : resultQuery;
-                return result.TransformResult(pagedRequest.MappingFunction);
+
+                if (pagedRequest.MappingProjection != null)
+                {
+                    return await Task.FromResult(result.TransformResult(pagedRequest.MappingProjection));
+                }
+                else
+                {
+                    return await Task.FromResult(result.TransformResult(pagedRequest.MappingFunction));
+                }
             }
 
-            return new PagedResult<U>
-            {
-                Results = new List<U>(),
-                ResultQuery = null
-            };
+            return new PagedResult<U>();
         }
 
         public IQueryable<T> ApplyPagination<T>(IQueryable<T> query, BasePagedRequest pagedRequest) where T : class, new()

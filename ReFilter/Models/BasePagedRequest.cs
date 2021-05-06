@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using ReFilter.Enums;
 
@@ -48,6 +49,23 @@ namespace ReFilter.Models
             return pagedRequest;
         }
 
+        public PagedRequest<T, U> GetPagedRequest<T, U>(bool returnQueryOnly = false, bool returnResultsOnly = false) where T : class, new() where U : class, new()
+        {
+            var pagedRequest = new PagedRequest<T, U>(this)
+            {
+                PageIndex = PageIndex,
+                PageSize = PageSize,
+                PropertyFilterConfigs = PropertyFilterConfigs,
+                SearchQuery = SearchQuery,
+                Sorting = Sorting,
+                Where = Where,
+                ReturnQueryOnly = returnQueryOnly,
+                ReturnResultsOnly = returnResultsOnly
+            };
+
+            return pagedRequest;
+        }
+
         public PagedRequest<T, U> GetPagedRequest<T, U>(Func<List<T>, List<U>> mappingFunction) where T : class, new() where U : class, new()
         {
             var pagedRequest = new PagedRequest<T, U>(this)
@@ -55,6 +73,19 @@ namespace ReFilter.Models
                 ReturnQueryOnly = false,
                 ReturnResultsOnly = true,
                 MappingFunction = mappingFunction
+            };
+
+            return pagedRequest;
+        }
+
+
+        public PagedRequest<T, U> GetPagedRequest<T, U>(Func<IQueryable<T>, List<U>> mappingProjection) where T : class, new() where U : class, new()
+        {
+            var pagedRequest = new PagedRequest<T, U>(this)
+            {
+                ReturnQueryOnly = false,
+                ReturnResultsOnly = true,
+                MappingProjection = mappingProjection
             };
 
             return pagedRequest;

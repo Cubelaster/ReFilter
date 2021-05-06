@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ReFilter.Models
 {
@@ -42,5 +43,6 @@ namespace ReFilter.Models
         }
 
         public Func<List<T>, List<U>> MappingFunction { get; set; } = null;
+        public Func<IQueryable<T>, List<U>> MappingProjection { get; set; } = null;
     }
 }
