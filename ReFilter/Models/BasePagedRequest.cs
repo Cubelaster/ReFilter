@@ -32,7 +32,7 @@ namespace ReFilter.Models
         /// </summary>
         public string SearchQuery { get; set; }
 
-        public PagedRequest GetPagedRequest(bool returnQueryOnly = false, bool returnResultsOnly = false)
+        public PagedRequest GetPagedRequest(bool returnQuery = true, bool returnResults = false)
         {
             var pagedRequest = new PagedRequest
             {
@@ -42,14 +42,14 @@ namespace ReFilter.Models
                 SearchQuery = SearchQuery,
                 Sorting = Sorting,
                 Where = Where,
-                ReturnQueryOnly = returnQueryOnly,
-                ReturnResultsOnly = returnResultsOnly
+                ReturnQuery = returnQuery,
+                ReturnResults = returnResults
             };
 
             return pagedRequest;
         }
 
-        public PagedRequest<T, U> GetPagedRequest<T, U>(bool returnQueryOnly = false, bool returnResultsOnly = false) where T : class, new() where U : class, new()
+        public PagedRequest<T, U> GetPagedRequest<T, U>(bool returnQuery = true, bool returnResults = false) where T : class, new() where U : class, new()
         {
             var pagedRequest = new PagedRequest<T, U>(this)
             {
@@ -59,8 +59,8 @@ namespace ReFilter.Models
                 SearchQuery = SearchQuery,
                 Sorting = Sorting,
                 Where = Where,
-                ReturnQueryOnly = returnQueryOnly,
-                ReturnResultsOnly = returnResultsOnly
+                ReturnQuery = returnQuery,
+                ReturnResults = returnResults
             };
 
             return pagedRequest;
@@ -70,21 +70,20 @@ namespace ReFilter.Models
         {
             var pagedRequest = new PagedRequest<T, U>(this)
             {
-                ReturnQueryOnly = false,
-                ReturnResultsOnly = true,
+                ReturnQuery = false,
+                ReturnResults = true,
                 MappingFunction = mappingFunction
             };
 
             return pagedRequest;
         }
 
-
         public PagedRequest<T, U> GetPagedRequest<T, U>(Func<IQueryable<T>, List<U>> mappingProjection) where T : class, new() where U : class, new()
         {
             var pagedRequest = new PagedRequest<T, U>(this)
             {
-                ReturnQueryOnly = false,
-                ReturnResultsOnly = true,
+                ReturnQuery = false,
+                ReturnResults = true,
                 MappingProjection = mappingProjection
             };
 

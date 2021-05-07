@@ -19,12 +19,12 @@ namespace ReFilter.Models
             SearchQuery = SearchQuery;
             Sorting = pagedRequest.Sorting;
             Where = pagedRequest.Where;
-            ReturnQueryOnly = false;
-            ReturnResultsOnly = true;
+            ReturnQuery = false;
+            ReturnResults = true;
         }
 
-        public bool ReturnQueryOnly { get; set; } = false;
-        public bool ReturnResultsOnly { get; set; } = false;
+        public bool ReturnQuery { get; set; } = true;
+        public bool ReturnResults { get; set; } = false;
     }
 
     public class PagedRequest<T, U> : PagedRequest where T : class, new() where U : class, new()
@@ -37,9 +37,10 @@ namespace ReFilter.Models
             SearchQuery = SearchQuery;
             Sorting = pagedRequest.Sorting;
             Where = pagedRequest.Where;
-            ReturnQueryOnly = false;
-            ReturnResultsOnly = true;
+            ReturnQuery = true;
+            ReturnResults = false;
             MappingFunction = null;
+            MappingProjection = null;
         }
 
         public Func<List<T>, List<U>> MappingFunction { get; set; } = null;

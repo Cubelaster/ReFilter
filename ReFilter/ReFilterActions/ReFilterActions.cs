@@ -27,6 +27,14 @@ namespace ReFilter.ReFilterActions
 
         #region Pagination
 
+        /// <summary>
+        /// This is a basic GetPaged
+        /// It has options which enable you to select either the query or the list return types
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="query"></param>
+        /// <param name="pagedRequest"></param>
+        /// <returns></returns>
         public async Task<PagedResult<T>> GetPaged<T>(IQueryable<T> query, PagedRequest pagedRequest) where T : class, new()
         {
             Type objectType = query.FirstOrDefault()?.GetType();
@@ -54,8 +62,8 @@ namespace ReFilter.ReFilterActions
                 result.RowCount = query.Count();
                 result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
 
-                result.Results = pagedRequest.ReturnQueryOnly ? new List<T>() : await Task.FromResult(resultQuery.ToList());
-                result.ResultQuery = pagedRequest.ReturnResultsOnly ? null : resultQuery;
+                result.Results = pagedRequest.ReturnResults ? await Task.FromResult(resultQuery.ToList()) : new List<T>();
+                result.ResultQuery = pagedRequest.ReturnQuery ? resultQuery : null;
                 return result;
             }
 
@@ -66,6 +74,15 @@ namespace ReFilter.ReFilterActions
             };
         }
 
+        /// <summary>
+        /// Advanced option of GetPaged
+        /// It automatically returns mapped result and it does not return the query, since it is already resolved
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="U"></typeparam>
+        /// <param name="query"></param>
+        /// <param name="pagedRequest"></param>
+        /// <returns></returns>
         public async Task<PagedResult<U>> GetPaged<T, U>(IQueryable<T> query, PagedRequest<T, U> pagedRequest) where T : class, new() where U : class, new()
         {
             Type objectType = query.FirstOrDefault()?.GetType();
@@ -93,16 +110,7 @@ namespace ReFilter.ReFilterActions
                 result.RowCount = query.Count();
                 result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
 
-                result.ResultQuery = pagedRequest.ReturnResultsOnly ? null : resultQuery;
-
-                if (pagedRequest.MappingProjection != null)
-                {
-                    return await Task.FromResult(result.TransformResult(pagedRequest.MappingProjection));
-                }
-                else
-                {
-                    return await Task.FromResult(result.TransformResult(pagedRequest.MappingFunction));
-                }
+                return await Task.FromResult(result.TransformResult(pagedRequest, resultQuery));
             }
 
             return new PagedResult<U>();
@@ -143,8 +151,8 @@ namespace ReFilter.ReFilterActions
                 result.RowCount = query.Count();
                 result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
 
-                result.Results = pagedRequest.ReturnQueryOnly ? new List<T>() : await Task.FromResult(query.ToList());
-                result.ResultQuery = pagedRequest.ReturnResultsOnly ? null : query;
+                result.Results = pagedRequest.ReturnResults ? new List<T>() : await Task.FromResult(query.ToList());
+                result.ResultQuery = pagedRequest.ReturnQuery ? null : query;
                 return result;
             }
 
@@ -180,9 +188,7 @@ namespace ReFilter.ReFilterActions
                 result.RowCount = query.Count();
                 result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
 
-                result.Results = pagedRequest.ReturnQueryOnly ? new List<T>() : await Task.FromResult(query.ToList());
-                result.ResultQuery = pagedRequest.ReturnResultsOnly ? null : query;
-                return result.TransformResult(pagedRequest.MappingFunction);
+                return await Task.FromResult(result.TransformResult(pagedRequest, query));
             }
 
             return new PagedResult<U>

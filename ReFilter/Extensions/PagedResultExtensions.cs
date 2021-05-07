@@ -36,5 +36,22 @@ namespace ReFilter.Extensions
 
             return newPagedResult;
         }
+
+        public static PagedResult<U> TransformResult<U, T>(this PagedResult<T> pagedResult, PagedRequest<T, U> pagedRequest, IQueryable<T> query) where T : class, new() where U : class, new()
+        {
+            var newPagedResult = new PagedResult<U>
+            {
+                PageCount = pagedResult.PageCount,
+                PageIndex = pagedResult.PageIndex,
+                PageSize = pagedResult.PageSize,
+                RowCount = pagedResult.RowCount
+            };
+
+            newPagedResult.Results = pagedRequest.MappingFunction != null ?
+                pagedRequest.MappingFunction(query.ToList())
+                : pagedRequest.MappingProjection(query);
+
+            return newPagedResult;
+        }
     }
 }

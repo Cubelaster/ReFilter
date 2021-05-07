@@ -48,7 +48,7 @@ namespace TestProject.TestServices
         {
             var testQueryable = testList.AsQueryable();
 
-            var pagedRequest = request.GetPagedRequest(returnResultsOnly: true);
+            var pagedRequest = request.GetPagedRequest(returnResults: true);
 
             var result = await testReFilterActions.GetPaged(testQueryable, pagedRequest);
 
@@ -71,8 +71,8 @@ namespace TestProject.TestServices
         {
             var testQueryable = testList.AsQueryable();
 
-            List<StudentViewModel> mappingFunction(List<Student> x) => StudentMapper.MapListToViewModel(x);
-            var pagedRequest = request.GetPagedRequest((Func<List<Student>, List<StudentViewModel>>)mappingFunction);
+            List<StudentViewModel> mappingFunction(IQueryable<Student> x) => StudentMapper.MapIQueryableToViewModel(x);
+            var pagedRequest = request.GetPagedRequest((Func<IQueryable<Student>, List<StudentViewModel>>)mappingFunction);
 
             var result = await testReFilterActions.GetPaged(testQueryable, pagedRequest);
 

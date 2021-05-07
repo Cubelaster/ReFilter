@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using TestProject.Models;
 
 namespace TestProject.Mappers
@@ -34,6 +37,25 @@ namespace TestProject.Mappers
             });
 
             return studentViewModelList;
+        }
+
+        public static Expression<Func<Student, StudentViewModel>> MappingExpression()
+        {
+            Expression<Func<Student, StudentViewModel>> expression = student => new StudentViewModel
+            {
+                Id = student.Id,
+                Age = student.Age,
+                FirstName = student.FirstName,
+                LastName = student.LastName,
+                FullName = $"{student.FirstName} {student.LastName}",
+                Gender = student.Gender
+            };
+            return expression;
+        }
+
+        public static List<StudentViewModel> MapIQueryableToViewModel(IQueryable<Student> students)
+        {
+            return students.Select(MappingExpression()).ToList();
         }
     }
 }

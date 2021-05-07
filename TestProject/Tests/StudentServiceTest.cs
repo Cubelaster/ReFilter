@@ -59,5 +59,21 @@ namespace TestProject.Tests
 
             return result.RowCount;
         }
+
+        [Test]
+        [TestCaseSource(nameof(TestCases))]
+        [Parallelizable(ParallelScope.All)]
+        public async Task<int> MappingTestsProjection(BasePagedRequest request)
+        {
+            var unitUnderTest = new StudentService(StudentServiceTestData.Students);
+            var result = await unitUnderTest.GetPagedMappedProjection<StudentViewModel>(request);
+
+            Type type = result.Results.GetType().GetGenericArguments()[0];
+
+            Assert.IsTrue(type == typeof(StudentViewModel));
+            Assert.IsTrue(result.Results.TrueForAll(s => s.FullName == $"{s.FirstName} {s.LastName}"));
+
+            return result.RowCount;
+        }
     }
 }

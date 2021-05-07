@@ -45,7 +45,7 @@ namespace TestProject.TestServices
         {
             var testQueryable = testList.AsQueryable();
 
-            var pagedRequest = request.GetPagedRequest(returnResultsOnly: true);
+            var pagedRequest = request.GetPagedRequest(returnResults: true);
 
             var result = await testReFilterActions.GetPaged(testQueryable, pagedRequest);
 
