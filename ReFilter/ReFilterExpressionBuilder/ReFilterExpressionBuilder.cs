@@ -58,6 +58,14 @@ namespace ReFilter.ReFilterExpressionBuilder
                 OperatorComparer.EndsWith
             };
 
+            var numericMask = new List<OperatorComparer>
+            {
+                OperatorComparer.BetweenExclusive,
+                OperatorComparer.BetweenInclusive,
+                OperatorComparer.BetweenHigherInclusive,
+                OperatorComparer.BetweenLowerInclusive
+            };
+
             if (mask.Contains(comparer) && left.Type != typeof(string))
             {
                 comparer = OperatorComparer.Equals;

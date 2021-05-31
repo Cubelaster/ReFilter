@@ -14,6 +14,10 @@ namespace ReFilter.Enums
         LessThanOrEqual = ExpressionType.LessThanOrEqual,
         NotEqual = ExpressionType.NotEqual,
         Not = ExpressionType.Not,
+        BetweenExclusive = 95,
+        BetweenInclusive = 96,
+        BetweenLowerInclusive = 97,
+        BetweenHigherInclusive = 98,
         CustomFilter = 99
     }
 }
