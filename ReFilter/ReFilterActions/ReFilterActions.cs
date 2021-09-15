@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
+using LinqKit;
 using ReFilter.Attributes;
 using ReFilter.Extensions;
 using ReFilter.Models;
@@ -57,6 +58,20 @@ namespace ReFilter.ReFilterActions
                     query = FilterObject(query, pagedRequest);
                 }
 
+                List<PropertyInfo> searchableProperties;
+                if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
+                {
+                    searchableProperties = objectType.GetSearchableProperties();
+
+                    if (searchableProperties.Any())
+                    {
+                        query = query
+                        .Where(q => searchableProperties
+                            .Any(p => p.GetValue(q).ToString()
+                            .Contains(pagedRequest.SearchQuery, StringComparison.OrdinalIgnoreCase)));
+                    }
+                }
+
                 var resultQuery = ApplyPagination<T>(query, pagedRequest);
 
                 result.RowCount = query.Count();
@@ -105,6 +120,20 @@ namespace ReFilter.ReFilterActions
                     query = FilterObject(query, pagedRequest);
                 }
 
+                List<PropertyInfo> searchableProperties;
+                if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
+                {
+                    searchableProperties = objectType.GetSearchableProperties();
+
+                    if (searchableProperties.Any())
+                    {
+                        query = query
+                        .Where(q => searchableProperties
+                            .Any(p => p.GetValue(q).ToString()
+                            .Contains(pagedRequest.SearchQuery, StringComparison.OrdinalIgnoreCase)));
+                    }
+                }
+
                 var resultQuery = ApplyPagination(query, pagedRequest);
 
                 result.RowCount = query.Count();
@@ -148,6 +177,20 @@ namespace ReFilter.ReFilterActions
                     query = FilterObject(query, pagedRequest);
                 }
 
+                List<PropertyInfo> searchableProperties;
+                if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
+                {
+                    searchableProperties = objectType.GetSearchableProperties();
+
+                    if (searchableProperties.Any())
+                    {
+                        query = query
+                        .Where(q => searchableProperties
+                            .Any(p => p.GetValue(q).ToString()
+                            .Contains(pagedRequest.SearchQuery, StringComparison.OrdinalIgnoreCase)));
+                    }
+                }
+
                 result.RowCount = query.Count();
                 result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
 
@@ -183,6 +226,20 @@ namespace ReFilter.ReFilterActions
                 if (pagedRequest.Where != null)
                 {
                     query = FilterObject(query, pagedRequest);
+                }
+
+                List<PropertyInfo> searchableProperties;
+                if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
+                {
+                    searchableProperties = objectType.GetSearchableProperties();
+
+                    if (searchableProperties.Any())
+                    {
+                        query = query
+                        .Where(q => searchableProperties
+                            .Any(p => p.GetValue(q).ToString()
+                            .Contains(pagedRequest.SearchQuery, StringComparison.OrdinalIgnoreCase)));
+                    }
                 }
 
                 result.RowCount = query.Count();
@@ -305,10 +362,7 @@ namespace ReFilter.ReFilterActions
                 List<PropertyInfo> searchableProperties;
                 if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
                 {
-                    searchableProperties = objectType
-                        .GetProperties()
-                        .Where(p => p.GetCustomAttributes().OfType<ReFilterProperty>().Any(e => e.UsedForSearchQuery))
-                        .ToList();
+                    searchableProperties = objectType.GetSearchableProperties();
 
                     if (searchableProperties.Any())
                     {
