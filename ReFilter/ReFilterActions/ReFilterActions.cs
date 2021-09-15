@@ -285,8 +285,7 @@ namespace ReFilter.ReFilterActions
             };
         }
 
-        public async Task<PagedResult<U>> GetBySearchQuery<T, U>(IQueryable<T> query, BasePagedRequest pagedRequest,
-            Func<List<T>, List<U>> mappingFunction,
+        public async Task<PagedResult<U>> GetBySearchQuery<T, U>(IQueryable<T> query, PagedRequest<T, U> pagedRequest,
             bool applyPagination = false, bool returnQueryOnly = false, bool returnResultsOnly = false) where T : class, new() where U : class, new()
         {
             Type objectType = query.FirstOrDefault()?.GetType();
@@ -330,7 +329,7 @@ namespace ReFilter.ReFilterActions
 
                 result.Results = returnQueryOnly ? new List<T>() : await Task.FromResult(query.ToList());
                 result.ResultQuery = returnResultsOnly ? null : query;
-                return result.TransformResult(mappingFunction);
+                return result.TransformResult(pagedRequest, query);
             }
 
             return new PagedResult<U>

@@ -42,6 +42,14 @@ namespace TestProject.Tests
             }
         }
 
+        public static IEnumerable<TestCaseData> TestCasesSearch
+        {
+            get
+            {
+                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "10" }).Returns(2).SetName("Search Query");
+            }
+        }
+
         [Test]
         [TestCaseSource(nameof(TestCases))]
         [Parallelizable(ParallelScope.All)]
@@ -49,6 +57,22 @@ namespace TestProject.Tests
         {
             var unitUnderTest = new SchoolService(SchoolServiceTestData.Schools);
             var result = await unitUnderTest.GetPagedMapped<SchoolViewModel>(request);
+
+            Type type = result.Results.GetType().GetGenericArguments()[0];
+
+            Assert.IsTrue(type == typeof(SchoolViewModel));
+            //Assert.IsTrue(result.Results.TrueForAll(s => s.Name == $"{s.FirstName} {s.LastName}"));
+
+            return result.RowCount;
+        }
+
+        [Test]
+        [TestCaseSource(nameof(TestCasesSearch))]
+        [Parallelizable(ParallelScope.All)]
+        public async Task<int> SearchMappingTests(BasePagedRequest request)
+        {
+            var unitUnderTest = new SchoolService(SchoolServiceTestData.Schools);
+            var result = await unitUnderTest.GetPagedSearchQuery<SchoolViewModel>(request);
 
             Type type = result.Results.GetType().GetGenericArguments()[0];
 
