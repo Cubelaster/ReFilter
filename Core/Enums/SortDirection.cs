@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace ReFilter.Enums
+namespace ReFilter.Core.Enums
 {
     public enum SortDirection
     {

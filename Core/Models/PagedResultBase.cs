@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ReFilter.Models
+namespace ReFilter.Core.Models
 {
     public abstract class PagedResultBase : PagedBase
     {
@@ -9,7 +9,7 @@ namespace ReFilter.Models
 
         public int CurrentPage => PageIndex + 1;
 
-        public int FirstRowOnPage => (PageIndex * PageSize) + 1;
+        public int FirstRowOnPage => PageIndex * PageSize + 1;
 
         public int LastRowOnPage => Math.Min(CurrentPage * PageSize, RowCount);
     }

@@ -1,6 +1,7 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using ReFilter.Models;
+using ReFilter.Core.Models;
 
 namespace ReFilter.ReFilterActions
 {
@@ -15,6 +16,8 @@ namespace ReFilter.ReFilterActions
         public Task<PagedResult<U>> GetBySearchQuery<T, U>(IQueryable<T> query, PagedRequest<T, U> pagedRequest,
             bool applyPagination = false, bool returnQueryOnly = false, bool returnResultsOnly = false) where T : class, new() where U : class, new();
         public IQueryable<T> ApplyPagination<T>(IQueryable<T> query, BasePagedRequest pagedRequest) where T : class, new();
+        IQueryable<T> SortObject<T>(IQueryable<T> query, List<PropertyFilterConfig> propertyFilterConfigs) where T : class, new();
         public IQueryable<T> FilterObject<T>(IQueryable<T> query, PagedRequest request) where T : class, new();
+        public IQueryable<T> SearchObject<T>(IQueryable<T> query, BasePagedRequest request) where T : class, new();
     }
 }

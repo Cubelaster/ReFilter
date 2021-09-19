@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace ReFilter.Models
+namespace ReFilter.Core.Models
 {
     public class PagedRequest : BasePagedRequest
     {

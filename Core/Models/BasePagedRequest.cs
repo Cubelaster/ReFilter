@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using ReFilter.Enums;
+using ReFilter.Core.Enums;
 
-namespace ReFilter.Models
+namespace ReFilter.Core.Models
 {
     public class BasePagedRequest : PagedBase
     {

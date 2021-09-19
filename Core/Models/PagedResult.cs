@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace ReFilter.Models
+namespace ReFilter.Core.Models
 {
     public class PagedResult<T> : PagedResultBase where T : new()
     {

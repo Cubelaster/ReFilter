@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
-using ReFilter.Models;
+using ReFilter.Core.Models;
 using TestProject.Models;
 using TestProject.TestData;
 using TestProject.TestServices;
@@ -18,7 +18,7 @@ namespace TestProject.Tests
             get
             {
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10 }).Returns(StudentServiceTestData.Students.Count).SetName("No Filters");
-                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{FirstName: 10}")}).Returns(0).SetName("Syntax correct but default values included so expect 0");
+                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{FirstName: 10}") }).Returns(0).SetName("Syntax correct but default values included so expect 0");
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{Id: 10, Gender: 1}") }).Returns(1).SetName("Override default value so filter can work correctly");
             }
         }

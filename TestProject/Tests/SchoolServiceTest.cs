@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
-using ReFilter.Models;
+using ReFilter.Core.Enums;
+using ReFilter.Core.Models;
 using TestProject.Models;
 using TestProject.TestData;
 using TestProject.TestServices;
@@ -30,12 +31,12 @@ namespace TestProject.Tests
                     {
                         new PropertyFilterConfig
                         {
-                            OperatorComparer = ReFilter.Enums.OperatorComparer.Contains,
+                            OperatorComparer = OperatorComparer.Contains,
                             PropertyName = "Name"
                         },
                         new PropertyFilterConfig
                         {
-                            OperatorComparer = ReFilter.Enums.OperatorComparer.Contains,
+                            OperatorComparer = OperatorComparer.Contains,
                             PropertyName = "Address"
                         }
                     }
@@ -48,6 +49,7 @@ namespace TestProject.Tests
             get
             {
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "10" }).Returns(2).SetName("Search Query");
+                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "100" }).Returns(1).SetName("Search Query 100");
             }
         }
 

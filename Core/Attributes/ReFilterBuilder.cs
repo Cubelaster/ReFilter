@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ReFilter.Attributes
+namespace ReFilter.Core.Attributes
 {
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
     public sealed class ReFilterBuilder : Attribute

@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using ReFilter.Attributes;
+using ReFilter.Core.Attributes;
 
 namespace TestProject.Models
 {

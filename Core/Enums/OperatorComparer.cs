@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace ReFilter.Enums
+namespace ReFilter.Core.Enums
 {
     public enum OperatorComparer
     {

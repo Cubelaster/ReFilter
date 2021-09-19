@@ -1,4 +1,4 @@
-﻿namespace ReFilter.Models
+﻿namespace ReFilter.Core.Models
 {
     public class PagedBase
     {

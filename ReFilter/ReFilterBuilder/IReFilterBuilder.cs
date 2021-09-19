@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using ReFilter.Models.Filtering.Contracts;
+using ReFilter.Core.Models.Filtering.Contracts;
 
 namespace ReFilter.ReFilterProvider
 {

@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-namespace ReFilter.Models.Filtering.Contracts
+namespace ReFilter.Core.Models.Filtering.Contracts
 {
     public interface IReFilter<T> where T : class, new()
     {

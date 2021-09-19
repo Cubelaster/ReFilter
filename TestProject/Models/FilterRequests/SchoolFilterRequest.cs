@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using ReFilter.Attributes;
-using ReFilter.Models.Filtering.Contracts;
+using ReFilter.Core.Attributes;
+using ReFilter.Core.Models.Filtering.Contracts;
 
 namespace TestProject.Models.FilterRequests
 {

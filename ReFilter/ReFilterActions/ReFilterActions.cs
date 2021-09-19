@@ -5,10 +5,10 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using LinqKit;
-using ReFilter.Attributes;
+using ReFilter.Core.Enums;
+using ReFilter.Core.Models;
+using ReFilter.Core.Models.Filtering.Contracts;
 using ReFilter.Extensions;
-using ReFilter.Models;
-using ReFilter.Models.Filtering.Contracts;
 using ReFilter.ReFilterTypeMatcher;
 
 namespace ReFilter.ReFilterActions
@@ -58,18 +58,10 @@ namespace ReFilter.ReFilterActions
                     query = FilterObject(query, pagedRequest);
                 }
 
-                List<PropertyInfo> searchableProperties;
+
                 if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
                 {
-                    searchableProperties = objectType.GetSearchableProperties();
-
-                    if (searchableProperties.Any())
-                    {
-                        query = query
-                        .Where(q => searchableProperties
-                            .Any(p => p.GetValue(q).ToString()
-                            .Contains(pagedRequest.SearchQuery, StringComparison.OrdinalIgnoreCase)));
-                    }
+                    query = SearchObject(query, pagedRequest);
                 }
 
                 var resultQuery = ApplyPagination<T>(query, pagedRequest);
@@ -120,18 +112,9 @@ namespace ReFilter.ReFilterActions
                     query = FilterObject(query, pagedRequest);
                 }
 
-                List<PropertyInfo> searchableProperties;
                 if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
                 {
-                    searchableProperties = objectType.GetSearchableProperties();
-
-                    if (searchableProperties.Any())
-                    {
-                        query = query
-                        .Where(q => searchableProperties
-                            .Any(p => p.GetValue(q).ToString()
-                            .Contains(pagedRequest.SearchQuery, StringComparison.OrdinalIgnoreCase)));
-                    }
+                    query = SearchObject(query, pagedRequest);
                 }
 
                 var resultQuery = ApplyPagination(query, pagedRequest);
@@ -177,18 +160,9 @@ namespace ReFilter.ReFilterActions
                     query = FilterObject(query, pagedRequest);
                 }
 
-                List<PropertyInfo> searchableProperties;
                 if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
                 {
-                    searchableProperties = objectType.GetSearchableProperties();
-
-                    if (searchableProperties.Any())
-                    {
-                        query = query
-                        .Where(q => searchableProperties
-                            .Any(p => p.GetValue(q).ToString()
-                            .Contains(pagedRequest.SearchQuery, StringComparison.OrdinalIgnoreCase)));
-                    }
+                    query = SearchObject(query, pagedRequest);
                 }
 
                 result.RowCount = query.Count();
@@ -228,18 +202,9 @@ namespace ReFilter.ReFilterActions
                     query = FilterObject(query, pagedRequest);
                 }
 
-                List<PropertyInfo> searchableProperties;
                 if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
                 {
-                    searchableProperties = objectType.GetSearchableProperties();
-
-                    if (searchableProperties.Any())
-                    {
-                        query = query
-                        .Where(q => searchableProperties
-                            .Any(p => p.GetValue(q).ToString()
-                            .Contains(pagedRequest.SearchQuery, StringComparison.OrdinalIgnoreCase)));
-                    }
+                    query = SearchObject(query, pagedRequest);
                 }
 
                 result.RowCount = query.Count();
@@ -292,6 +257,40 @@ namespace ReFilter.ReFilterActions
 
         #region SearchQueries
 
+        public IQueryable<T> SearchObject<T>(IQueryable<T> query, BasePagedRequest request) where T : class, new()
+        {
+            var objectType = query.ElementType;
+
+            var predicate = PredicateBuilder.New(query);
+
+            List<PropertyInfo> searchableProperties;
+            if (!string.IsNullOrEmpty(request.SearchQuery))
+            {
+                searchableProperties = objectType.GetSearchableProperties();
+
+                if (searchableProperties.Any())
+                {
+                    foreach (var property in searchableProperties)
+                    {
+                        var propertyFilterConfig = new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.Contains,
+                            PropertyName = property.Name,
+                            Value = request.SearchQuery
+                        };
+
+                        var searchExpression = ReFilterExpressionBuilder.ReFilterExpressionBuilder.BuildPredicate<T>(propertyFilterConfig);
+
+                        predicate = predicate.Or(searchExpression);
+                    }
+                }
+
+                return query.Where(predicate);
+            }
+
+            return query;
+        }
+
         public async Task<PagedResult<T>> GetBySearchQuery<T>(IQueryable<T> query, BasePagedRequest pagedRequest,
             bool applyPagination = false, bool returnQueryOnly = false, bool returnResultsOnly = false) where T : class, new()
         {
@@ -309,18 +308,9 @@ namespace ReFilter.ReFilterActions
                     query = SortObject(query, pagedRequest.PropertyFilterConfigs);
                 }
 
-                List<PropertyInfo> searchableProperties;
                 if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
                 {
-                    searchableProperties = objectType.GetSearchableProperties();
-
-                    if (searchableProperties.Any())
-                    {
-                        query = query
-                        .Where(q => searchableProperties
-                            .Any(p => p.GetValue(q).ToString()
-                            .Contains(pagedRequest.SearchQuery, StringComparison.OrdinalIgnoreCase)));
-                    }
+                    query = SearchObject(query, pagedRequest);
                 }
 
                 result.RowCount = query.Count();
@@ -359,18 +349,9 @@ namespace ReFilter.ReFilterActions
                     query = SortObject(query, pagedRequest.PropertyFilterConfigs);
                 }
 
-                List<PropertyInfo> searchableProperties;
                 if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
                 {
-                    searchableProperties = objectType.GetSearchableProperties();
-
-                    if (searchableProperties.Any())
-                    {
-                        query = query
-                        .Where(q => searchableProperties
-                            .Any(p => p.GetValue(q).ToString()
-                            .Contains(pagedRequest.SearchQuery, StringComparison.OrdinalIgnoreCase)));
-                    }
+                    query = SearchObject(query, pagedRequest);
                 }
 
                 result.RowCount = query.Count();
@@ -426,7 +407,7 @@ namespace ReFilter.ReFilterActions
             return (IOrderedQueryable<T>)result;
         }
 
-        private IQueryable<T> SortObject<T>(IQueryable<T> query, List<PropertyFilterConfig> propertyFilterConfigs) where T : class, new()
+        public IQueryable<T> SortObject<T>(IQueryable<T> query, List<PropertyFilterConfig> propertyFilterConfigs) where T : class, new()
         {
             var realSorts = propertyFilterConfigs.Where(pfc => pfc.SortDirection.HasValue).ToList();
 
