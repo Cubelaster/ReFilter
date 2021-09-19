@@ -16,7 +16,7 @@ namespace ReFilter.Models
             PageIndex = pagedRequest.PageIndex;
             PageSize = pagedRequest.PageSize;
             PropertyFilterConfigs = pagedRequest.PropertyFilterConfigs;
-            SearchQuery = SearchQuery;
+            SearchQuery = pagedRequest.SearchQuery;
             Sorting = pagedRequest.Sorting;
             Where = pagedRequest.Where;
             ReturnQuery = false;
@@ -34,7 +34,7 @@ namespace ReFilter.Models
             PageIndex = pagedRequest.PageIndex;
             PageSize = pagedRequest.PageSize;
             PropertyFilterConfigs = pagedRequest.PropertyFilterConfigs;
-            SearchQuery = SearchQuery;
+            SearchQuery = pagedRequest.SearchQuery;
             Sorting = pagedRequest.Sorting;
             Where = pagedRequest.Where;
             ReturnQuery = true;

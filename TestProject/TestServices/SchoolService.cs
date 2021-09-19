@@ -63,5 +63,17 @@ namespace TestProject.TestServices
 
             return result;
         }
+
+        public async Task<PagedResult<SchoolViewModel>> GetPagedSearchQuery<U>(BasePagedRequest request)
+        {
+            var testQueryable = testList.AsQueryable();
+
+            List<SchoolViewModel> mappingFunction(List<School> x) => SchoolMapper.MapListToViewModel(x);
+            var pagedRequest = request.GetPagedRequest((Func<List<School>, List<SchoolViewModel>>)mappingFunction);
+
+            var result = await testReFilterActions.GetBySearchQuery(testQueryable, pagedRequest);
+
+            return result;
+        }
     }
 }
