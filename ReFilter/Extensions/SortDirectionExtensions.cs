@@ -1,4 +1,4 @@
-﻿using ReFilter.Core.Enums;
+﻿using ReFilter.Enums;
 
 namespace ReFilter.Extensions
 {

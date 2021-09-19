@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using ReFilter.Core.Models;
+using ReFilter.Models;
 using ReFilter.ReFilterActions;
 using ReFilter.ReFilterTypeMatcher;
 using TestProject.Mappers;

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using ReFilter.Core.Models;
+using ReFilter.Models;
 
 namespace ReFilter.ReFilterActions
 {

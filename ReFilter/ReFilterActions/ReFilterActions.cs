@@ -5,9 +5,9 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using LinqKit;
-using ReFilter.Core.Enums;
-using ReFilter.Core.Models;
-using ReFilter.Core.Models.Filtering.Contracts;
+using ReFilter.Enums;
+using ReFilter.Models;
+using ReFilter.Models.Filtering.Contracts;
 using ReFilter.Extensions;
 using ReFilter.ReFilterTypeMatcher;
 

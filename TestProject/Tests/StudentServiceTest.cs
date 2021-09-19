@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
-using ReFilter.Core.Models;
+using ReFilter.Models;
 using TestProject.Models;
 using TestProject.TestData;
 using TestProject.TestServices;

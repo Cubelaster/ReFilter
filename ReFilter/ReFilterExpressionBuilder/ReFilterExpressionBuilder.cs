@@ -3,8 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using ReFilter.Core.Enums;
-using ReFilter.Core.Models;
+using ReFilter.Enums;
+using ReFilter.Models;
 
 namespace ReFilter.ReFilterExpressionBuilder
 {
