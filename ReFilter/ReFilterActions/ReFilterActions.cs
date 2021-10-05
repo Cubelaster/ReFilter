@@ -125,7 +125,10 @@ namespace ReFilter.ReFilterActions
                 return await Task.FromResult(result.TransformResult(pagedRequest, resultQuery));
             }
 
-            return new PagedResult<U>();
+            return new PagedResult<U>()
+            {
+                Results = new List<U>()
+            };
         }
 
         public IQueryable<T> ApplyPagination<T>(IQueryable<T> query, BasePagedRequest pagedRequest) where T : class, new()
