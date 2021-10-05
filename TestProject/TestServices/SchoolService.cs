@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using ReFilter.Models;
 using ReFilter.ReFilterActions;
+using ReFilter.ReFilterConfigBuilder;
 using ReFilter.ReFilterTypeMatcher;
 using TestProject.Mappers;
 using TestProject.Models;
@@ -26,7 +27,7 @@ namespace TestProject.TestServices
         {
             this.testList = testList;
 
-            testReFilterActions = InitializeTestFilterActions(new ReFilterConfigBuilder());
+            testReFilterActions = InitializeTestFilterActions(new ReFilterConfigBuilder(), new ReSortConfigBuilder());
         }
 
         /// <summary>
@@ -34,9 +35,9 @@ namespace TestProject.TestServices
         /// </summary>
         /// <param name="reFilterConfigBuilder"></param>
         /// <returns></returns>
-        private ReFilterActions InitializeTestFilterActions(IReFilterConfigBuilder reFilterConfigBuilder)
+        private ReFilterActions InitializeTestFilterActions(IReFilterConfigBuilder reFilterConfigBuilder, IReSortConfigBuilder reSortConfigBuilder)
         {
-            return new ReFilterActions(reFilterConfigBuilder);
+            return new ReFilterActions(reFilterConfigBuilder, reSortConfigBuilder);
         }
 
         #endregion Ctors and Members

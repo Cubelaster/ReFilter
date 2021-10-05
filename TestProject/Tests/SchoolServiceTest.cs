@@ -53,6 +53,44 @@ namespace TestProject.Tests
             }
         }
 
+        public static IEnumerable<TestCaseData> TestCasesSort
+        {
+            get
+            {
+                //yield return new TestCaseData(new BasePagedRequest
+                //{
+                //    PageIndex = 0,
+                //    PageSize = 10,
+                //    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                //        {
+                //            new PropertyFilterConfig
+                //            {
+                //                PropertyName = "Name",
+                //                SortDirection = SortDirection.ASC
+                //            }
+                //        }
+                //})
+                //.Returns(10)
+                //.SetName("Sort by Name");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            PropertyName = "Address",
+                            SortDirection = SortDirection.DESC
+                        }
+                    }
+                })
+                .Returns(10)
+                .SetName("Sort by Special");
+            }
+        }
+
         [Test]
         [TestCaseSource(nameof(TestCases))]
         [Parallelizable(ParallelScope.All)]
@@ -70,12 +108,42 @@ namespace TestProject.Tests
         }
 
         [Test]
+        public async Task MappingTests_Empty()
+        {
+            var request = new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "10" };
+            var unitUnderTest = new SchoolService(new List<School>());
+            var result = await unitUnderTest.GetPagedMapped<SchoolViewModel>(request);
+
+            Type type = result.Results.GetType().GetGenericArguments()[0];
+
+            Assert.IsTrue(type == typeof(SchoolViewModel));
+            Assert.IsTrue(result.Results.Count == 0);
+            //Assert.IsTrue(result.Results.TrueForAll(s => s.Name == $"{s.FirstName} {s.LastName}"));
+        }
+
+        [Test]
         [TestCaseSource(nameof(TestCasesSearch))]
         [Parallelizable(ParallelScope.All)]
         public async Task<int> SearchMappingTests(BasePagedRequest request)
         {
             var unitUnderTest = new SchoolService(SchoolServiceTestData.Schools);
             var result = await unitUnderTest.GetPagedSearchQuery<SchoolViewModel>(request);
+
+            Type type = result.Results.GetType().GetGenericArguments()[0];
+
+            Assert.IsTrue(type == typeof(SchoolViewModel));
+            //Assert.IsTrue(result.Results.TrueForAll(s => s.Name == $"{s.FirstName} {s.LastName}"));
+
+            return result.RowCount;
+        }
+
+        [Test]
+        [TestCaseSource(nameof(TestCasesSort))]
+        [Parallelizable(ParallelScope.All)]
+        public async Task<int> MappingTestsSort(BasePagedRequest request)
+        {
+            var unitUnderTest = new SchoolService(SchoolServiceTestData.Schools);
+            var result = await unitUnderTest.GetPagedMapped<SchoolViewModel>(request);
 
             Type type = result.Results.GetType().GetGenericArguments()[0];
 

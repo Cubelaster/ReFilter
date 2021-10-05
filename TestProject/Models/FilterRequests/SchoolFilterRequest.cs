@@ -8,7 +8,11 @@ namespace TestProject.Models.FilterRequests
     {
         public int? Id { get; set; }
         public string Name { get; set; }
+        [ReFilterProperty(HasSpecialSort = true)]
         public string Address { get; set; }
+
+        [ReFilterProperty(HasSpecialSort = true)]
+        public CountryFilterRequest Country {  get; set; }
 
         public List<string> Contacts { get; set; }
         [ReFilterProperty(HasSpecialFilter = true)]

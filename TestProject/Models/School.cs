@@ -11,6 +11,8 @@ namespace TestProject.Models
         [ReFilterProperty]
         public string Address { get; set; }
 
+        public Country Country { get; set; }
+
         public List<string> Contacts { get; set; }
         public List<Student> Students { get; set; }
     }
