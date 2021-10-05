@@ -7,5 +7,6 @@ namespace ReFilter.Attributes
     {
         public bool UsedForSearchQuery { get; set; } = true;
         public bool HasSpecialFilter { get; set; } = false;
+        public bool HasSpecialSort { get; set; } = false;
     }
 }
