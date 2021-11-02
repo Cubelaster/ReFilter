@@ -448,12 +448,12 @@ namespace ReFilter.ReFilterActions
                 if (specialSortProperties.Any(ssp => ssp.Name.Equals(sort.PropertyName)))
                 {
                     var sortBuilder = reSortConfigBuilder.GetMatchingSortBuilder<T>();
-                    orderedQuery = sortBuilder.BuildSortedQuery(query, sort);
+                    orderedQuery = sortBuilder.BuildSortedQuery(orderedQuery, sort);
                 }
                 else
                 {
                     methodName = sort.SortDirection.Value.GetOrderByNames(true);
-                    orderedQuery = ThenOrderBy((IOrderedQueryable<T>)query, sort.PropertyName, methodName);
+                    orderedQuery = ThenOrderBy(orderedQuery, sort.PropertyName, methodName);
                 }
             }
 
