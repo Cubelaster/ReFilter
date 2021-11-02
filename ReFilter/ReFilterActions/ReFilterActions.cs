@@ -51,20 +51,20 @@ namespace ReFilter.ReFilterActions
                     PageSize = pagedRequest.PageSize,
                 };
 
+                if (pagedRequest.PropertyFilterConfigs != null
+                    && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
+                {
+                    query = SortObject(query, pagedRequest.PropertyFilterConfigs);
+                }
+
                 if (pagedRequest.Where != null)
                 {
                     query = FilterObject(query, pagedRequest);
                 }
 
-
                 if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
                 {
                     query = SearchObject(query, pagedRequest);
-                }
-
-                if (pagedRequest.PropertyFilterConfigs != null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
-                {
-                    query = SortObject(query, pagedRequest.PropertyFilterConfigs);
                 }
 
                 var resultQuery = ApplyPagination<T>(query, pagedRequest);
@@ -105,6 +105,12 @@ namespace ReFilter.ReFilterActions
                     PageSize = pagedRequest.PageSize,
                 };
 
+                if (pagedRequest.PropertyFilterConfigs != null
+                    && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
+                {
+                    query = SortObject(query, pagedRequest.PropertyFilterConfigs);
+                }
+
                 if (pagedRequest.Where != null)
                 {
                     query = FilterObject(query, pagedRequest);
@@ -113,16 +119,6 @@ namespace ReFilter.ReFilterActions
                 if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
                 {
                     query = SearchObject(query, pagedRequest);
-                }
-
-                //if (pagedRequest.PropertyFilterConfigs != null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
-                //{
-                //    query = SortObject(query, pagedRequest.PropertyFilterConfigs);
-                //}
-
-                if (pagedRequest.PropertyFilterConfigs != null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
-                {
-                    query = SortObject(query, pagedRequest);
                 }
 
                 var resultQuery = ApplyPagination(query, pagedRequest);
@@ -161,7 +157,8 @@ namespace ReFilter.ReFilterActions
                     PageSize = pagedRequest.PageSize,
                 };
 
-                if (pagedRequest.PropertyFilterConfigs != null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
+                if (pagedRequest.PropertyFilterConfigs != null
+                    && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
                 {
                     query = SortObject(query, pagedRequest.PropertyFilterConfigs);
                 }
@@ -203,7 +200,8 @@ namespace ReFilter.ReFilterActions
                     PageSize = pagedRequest.PageSize,
                 };
 
-                if (pagedRequest.PropertyFilterConfigs != null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
+                if (pagedRequest.PropertyFilterConfigs != null
+                    && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
                 {
                     query = SortObject(query, pagedRequest.PropertyFilterConfigs);
                 }
@@ -314,7 +312,8 @@ namespace ReFilter.ReFilterActions
                     PageSize = pagedRequest.PageSize,
                 };
 
-                if (pagedRequest.PropertyFilterConfigs != null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
+                if (pagedRequest.PropertyFilterConfigs != null
+                    && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
                 {
                     query = SortObject(query, pagedRequest.PropertyFilterConfigs);
                 }
@@ -355,7 +354,8 @@ namespace ReFilter.ReFilterActions
                     PageSize = pagedRequest.PageSize,
                 };
 
-                if (pagedRequest.PropertyFilterConfigs != null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
+                if (pagedRequest.PropertyFilterConfigs != null
+                    && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
                 {
                     query = SortObject(query, pagedRequest.PropertyFilterConfigs);
                 }
@@ -420,30 +420,10 @@ namespace ReFilter.ReFilterActions
 
         public IQueryable<T> SortObject<T>(IQueryable<T> query, List<PropertyFilterConfig> propertyFilterConfigs) where T : class, new()
         {
-            var realSorts = propertyFilterConfigs.Where(pfc => pfc.SortDirection.HasValue).ToList();
-
-            var firstSort = realSorts.First();
-
-            IOrderedQueryable<T> orderedQuery;
-
-            var methodName = firstSort.SortDirection.Value.GetOrderByNames();
-            orderedQuery = OrderBy(query, firstSort.PropertyName, methodName);
-
-            foreach (var sort in realSorts.Skip(1))
-            {
-                methodName = sort.SortDirection.Value.GetOrderByNames(true);
-                orderedQuery = ThenOrderBy((IOrderedQueryable<T>)query, sort.PropertyName, methodName);
-            }
-
-            return orderedQuery;
-        }
-
-        public IQueryable<T> SortObject<T>(IQueryable<T> query, PagedRequest request) where T : class, new()
-        {
             var sortObjectType = reSortConfigBuilder.GetMatchingType<T>();
             var specialSortProperties = sortObjectType.GetSpecialSortProperties();
 
-            var realSorts = request.PropertyFilterConfigs
+            var realSorts = propertyFilterConfigs
                 .Where(pfc => pfc.SortDirection.HasValue)
                 .ToList();
 
@@ -455,7 +435,7 @@ namespace ReFilter.ReFilterActions
             if (specialSortProperties.Any(ssp => ssp.Name.Equals(firstSort.PropertyName)))
             {
                 var sortBuilder = reSortConfigBuilder.GetMatchingSortBuilder<T>();
-                orderedQuery = sortBuilder.BuildSortedQuery(query, firstSort);
+                orderedQuery = sortBuilder.BuildSortedQuery(query, firstSort, true);
             }
             else
             {
@@ -468,7 +448,7 @@ namespace ReFilter.ReFilterActions
                 if (specialSortProperties.Any(ssp => ssp.Name.Equals(sort.PropertyName)))
                 {
                     var sortBuilder = reSortConfigBuilder.GetMatchingSortBuilder<T>();
-                    orderedQuery = sortBuilder.BuildSortedQuery(query, sort, false);
+                    orderedQuery = sortBuilder.BuildSortedQuery(query, sort);
                 }
                 else
                 {

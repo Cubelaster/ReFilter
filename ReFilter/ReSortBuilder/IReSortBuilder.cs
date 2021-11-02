@@ -7,8 +7,8 @@ namespace ReFilter.ReSortBuilder
 {
     public interface IReSortBuilder<T> where T : class, new()
     {
-        IReSort<T> GetSort(PropertyFilterConfig propertyFilterConfig);
+        List<IReSort<T>> GetSorters(PropertyFilterConfig propertyFilterConfig);
         IQueryable<T> BuildEntityQuery();
-        IOrderedQueryable<T> BuildSortedQuery(IQueryable<T> query, PropertyFilterConfig propertyFilterConfig, bool isFirst = true);
+        IOrderedQueryable<T> BuildSortedQuery(IQueryable<T> query, PropertyFilterConfig propertyFilterConfig, bool isFirst = false);
     }
 }
