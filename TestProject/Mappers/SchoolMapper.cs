@@ -10,10 +10,11 @@ namespace TestProject.Mappers
             return new SchoolViewModel
             {
                 Id = school.Id,
-                Address = school.Address,
                 Name = school.Name,
+                Address = school.Address,
+                Country = school.Country != null ? $"{school.Country.Alpha2Code} {school.Country.Name}" : null,
                 Contacts = school.Contacts,
-                Students = StudentMapper.MapListToViewModel(school.Students)
+                Students = StudentMapper.MapListToViewModel(school.Students),
             };
         }
 

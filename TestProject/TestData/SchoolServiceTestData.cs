@@ -18,7 +18,14 @@ namespace TestProject.TestData
                         Name = $"School Name {i}",
                         Address = $"School Address {i}",
                         Contacts = new List<string> { $"Contact {i}", $"Contact {i + 1}" },
-                        Students = new List<Student>()
+                        Students = new List<Student>(),
+                        Country = new Country
+                        {
+                            Id = i,
+                            Name = $"Country Name {i}",
+                            Alpha2Code = $"Alpha2Code {i}",
+                            Description = $"Description {i}",
+                        }
                     };
 
                     schoolList.Add(newSchool);
