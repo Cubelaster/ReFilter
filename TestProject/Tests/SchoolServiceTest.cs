@@ -82,13 +82,13 @@ namespace TestProject.Tests
                     {
                         new PropertyFilterConfig
                         {
-                            PropertyName = "Address",
+                            PropertyName = "Country",
                             SortDirection = SortDirection.DESC
                         }
                     }
                 })
                 .Returns(100)
-                .SetName("Sort by Special");
+                .SetName("Sort by Special Desc");
 
                 yield return new TestCaseData(new BasePagedRequest
                 {
@@ -98,13 +98,34 @@ namespace TestProject.Tests
                     {
                         new PropertyFilterConfig
                         {
+                            PropertyName = "Country",
+                            SortDirection = SortDirection.ASC
+                        }
+                    }
+                })
+                .Returns(100)
+                .SetName("Sort by Special Asc");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            PropertyName = "Name",
+                            SortDirection = SortDirection.DESC
+                        },
+                        new PropertyFilterConfig
+                        {
                             PropertyName = "Address",
                             SortDirection = SortDirection.ASC
                         }
                     }
                 })
                 .Returns(100)
-                .SetName("Sort by Special");
+                .SetName("Sort by Multiple");
             }
         }
 
@@ -167,11 +188,11 @@ namespace TestProject.Tests
             Assert.IsTrue(type == typeof(SchoolViewModel));
             if (request.PropertyFilterConfigs.Any(pfc => pfc.SortDirection == SortDirection.DESC))
             {
-                Assert.IsTrue(result.Results.First().Country.Contains("99"));
+                Assert.IsTrue(result.Results.First().Name.Contains("99"));
             }
             else
             {
-                Assert.IsTrue(result.Results.First().Country.Contains("1"));
+                Assert.IsTrue(result.Results.First().Name.Contains("1"));
             }
 
             return result.RowCount;

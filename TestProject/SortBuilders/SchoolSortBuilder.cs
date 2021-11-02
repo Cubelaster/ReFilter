@@ -44,9 +44,9 @@ namespace TestProject.SortBuilders
 
             if (propertyFilterConfig != null)
             {
-                if (propertyFilterConfig.PropertyName == nameof(SchoolFilterRequest.Address))
+                if (propertyFilterConfig.PropertyName == nameof(SchoolFilterRequest.Country))
                 {
-                    sorters.Add(new AddressSorter());
+                    sorters.Add(new CountrySorter());
                 }
             }
 

@@ -5,7 +5,7 @@ using TestProject.Models;
 
 namespace TestProject.SortBuilders
 {
-    internal class AddressSorter : IReSort<School>
+    internal class CountrySorter : IReSort<School>
     {
         public IOrderedQueryable<School> SortQuery(IQueryable<School> query, SortDirection sortDirection, bool isFirst = true)
         {
