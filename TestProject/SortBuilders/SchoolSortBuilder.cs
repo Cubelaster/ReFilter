@@ -16,19 +16,29 @@ namespace TestProject.SortBuilders
             return SchoolServiceTestData.Schools.AsQueryable();
         }
 
-        public IOrderedQueryable<School> BuildSortedQuery(IQueryable<School> query, PropertyFilterConfig propertyFilterConfig, bool isFirst = true)
+        public IOrderedQueryable<School> BuildSortedQuery(IQueryable<School> query, PropertyFilterConfig propertyFilterConfig,
+            bool isFirst = false)
         {
-            var sorter = GetSort(propertyFilterConfig);
-            if (sorter == null)
+            var sorters = GetSorters(propertyFilterConfig);
+
+            if (sorters == null || sorters.Count == 0)
             {
                 return (IOrderedQueryable<School>)query;
             }
 
-            var sortedQuery = sorter.SortQuery(query, isFirst);
-            return sortedQuery;
+            IOrderedQueryable<School> orderedQuery = (IOrderedQueryable<School>)query;
+
+            for (var i = 0; i < sorters.Count; i++)
+            {
+                orderedQuery = sorters[i].SortQuery(orderedQuery,
+                    propertyFilterConfig.SortDirection.Value,
+                    isFirst: (i == 0 && isFirst));
+            }
+
+            return orderedQuery;
         }
 
-        public IReSort<School> GetSort(PropertyFilterConfig propertyFilterConfig)
+        public List<IReSort<School>> GetSorters(PropertyFilterConfig propertyFilterConfig)
         {
             List<IReSort<School>> sorters = new List<IReSort<School>>();
 
@@ -40,7 +50,7 @@ namespace TestProject.SortBuilders
                 }
             }
 
-            return null;
+            return sorters;
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using ReFilter.Enums;
 using ReFilter.Models.Filtering.Contracts;
 using TestProject.Models;
 
@@ -6,9 +7,16 @@ namespace TestProject.SortBuilders
 {
     internal class AddressSorter : IReSort<School>
     {
-        public IOrderedQueryable<School> SortQuery(IQueryable<School> query, bool isFirst = true)
+        public IOrderedQueryable<School> SortQuery(IQueryable<School> query, SortDirection sortDirection, bool isFirst = true)
         {
-            return query.OrderBy(e => e.Country.Alpha2Code).ThenBy(e => e.Address);
+            if (sortDirection == SortDirection.ASC)
+            {
+                return query.OrderBy(e => (e.Country == null ? null : e.Country.Alpha2Code)).ThenBy(e => e.Address);
+            }
+            else
+            {
+                return query.OrderByDescending(e => (e.Country == null ? null : e.Country.Alpha2Code)).ThenByDescending(e => e.Address);
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -57,21 +58,21 @@ namespace TestProject.Tests
         {
             get
             {
-                //yield return new TestCaseData(new BasePagedRequest
-                //{
-                //    PageIndex = 0,
-                //    PageSize = 10,
-                //    PropertyFilterConfigs = new List<PropertyFilterConfig>
-                //        {
-                //            new PropertyFilterConfig
-                //            {
-                //                PropertyName = "Name",
-                //                SortDirection = SortDirection.ASC
-                //            }
-                //        }
-                //})
-                //.Returns(10)
-                //.SetName("Sort by Name");
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                        {
+                            new PropertyFilterConfig
+                            {
+                                PropertyName = "Name",
+                                SortDirection = SortDirection.ASC
+                            }
+                        }
+                })
+                .Returns(100)
+                .SetName("Sort by Name");
 
                 yield return new TestCaseData(new BasePagedRequest
                 {
@@ -86,7 +87,23 @@ namespace TestProject.Tests
                         }
                     }
                 })
-                .Returns(10)
+                .Returns(100)
+                .SetName("Sort by Special");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            PropertyName = "Address",
+                            SortDirection = SortDirection.ASC
+                        }
+                    }
+                })
+                .Returns(100)
                 .SetName("Sort by Special");
             }
         }
@@ -148,7 +165,14 @@ namespace TestProject.Tests
             Type type = result.Results.GetType().GetGenericArguments()[0];
 
             Assert.IsTrue(type == typeof(SchoolViewModel));
-            //Assert.IsTrue(result.Results.TrueForAll(s => s.Name == $"{s.FirstName} {s.LastName}"));
+            if (request.PropertyFilterConfigs.Any(pfc => pfc.SortDirection == SortDirection.DESC))
+            {
+                Assert.IsTrue(result.Results.First().Country.Contains("99"));
+            }
+            else
+            {
+                Assert.IsTrue(result.Results.First().Country.Contains("1"));
+            }
 
             return result.RowCount;
         }
