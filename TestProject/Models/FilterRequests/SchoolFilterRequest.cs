@@ -16,5 +16,7 @@ namespace TestProject.Models.FilterRequests
         public List<string> Contacts { get; set; }
         [ReFilterProperty(HasSpecialFilter = true)]
         public List<Student> Students { get; set; }
+
+        public bool? IsActive { get; set; }
     }
 }

@@ -15,6 +15,7 @@ namespace TestProject.Mappers
                 Country = school.Country != null ? $"{school.Country.Alpha2Code} {school.Country.Name}" : null,
                 Contacts = school.Contacts,
                 Students = StudentMapper.MapListToViewModel(school.Students),
+                IsActive = school.IsActive
             };
         }
 

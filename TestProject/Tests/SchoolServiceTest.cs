@@ -22,7 +22,8 @@ namespace TestProject.Tests
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10 }).Returns(SchoolServiceTestData.Schools.Count).SetName("Mapped: No Filters");
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{Address: \"School Address 1\"}") }).Returns(1).SetName("Mapped: Filter by Address with no Property Filter Config");
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{Name: 10}") }).Returns(0).SetName("Mapped: Filter by Name(Equals)");
-                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{Name: 10, Address: 10}") }).Returns(0).SetName("Mapped: Filter by Name(Equals) and Address(Equals)");
+                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{Name: 10, Address: 10}")}).Returns(0).SetName("Mapped: Filter by Name(Equals) and Address(Equals)");
+                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{IsActive: true}") }).Returns(50).SetName("Mapped: Filter by IsActive");
                 yield return new TestCaseData(new BasePagedRequest
                 {
                     PageIndex = 0,

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using TestProject.Models;
 
 namespace TestProject.TestData
@@ -25,7 +26,8 @@ namespace TestProject.TestData
                             Name = $"Country Name {i}",
                             Alpha2Code = $"Alpha2Code {i}",
                             Description = $"Description {i}",
-                        }
+                        },
+                        IsActive = Convert.ToBoolean(i%2)
                     };
 
                     schoolList.Add(newSchool);
