@@ -61,7 +61,7 @@ namespace ReFilter.ReFilterExpressionBuilder
                 OperatorComparer.NotEndsWith
             };
 
-            var numericMask = new List<OperatorComparer>
+            var rangeMask = new List<OperatorComparer>
             {
                 OperatorComparer.BetweenExclusive,
                 OperatorComparer.BetweenInclusive,
@@ -74,7 +74,11 @@ namespace ReFilter.ReFilterExpressionBuilder
                 comparer = OperatorComparer.Equals;
             }
 
-            if (!mask.Contains(comparer))
+            if (rangeMask.Contains(comparer))
+            {
+
+            }
+            else if (!mask.Contains(comparer))
             {
                 return Expression.MakeBinary((ExpressionType)comparer, left, Expression.Convert(right, left.Type));
             }
