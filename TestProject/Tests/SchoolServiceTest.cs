@@ -43,6 +43,81 @@ namespace TestProject.Tests
                         }
                     }
                 }).Returns(2).SetName("Mapped: Filter by Name(Contains) and Address(Contains)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Name: 10}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.NotEqual,
+                            PropertyName = "Name"
+                        }
+                    }
+                }).Returns(100).SetName("Mapped: Filter by Name(Not Equal)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Name: 10}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.NotContains,
+                            PropertyName = "Name"
+                        }
+                    }
+                }).Returns(98).SetName("Mapped: Filter by Name(Not Contains)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Name: 10}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.NotStartsWith,
+                            PropertyName = "Name"
+                        }
+                    }
+                }).Returns(100).SetName("Mapped: Filter by Name(Not Starts With 10)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Name: 10}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.NotEndsWith,
+                            PropertyName = "Name"
+                        }
+                    }
+                }).Returns(99).SetName("Mapped: Filter by Name(Not Ends With 10)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Name: \"School\"}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.NotStartsWith,
+                            PropertyName = "Name"
+                        }
+                    }
+                }).Returns(0).SetName("Mapped: Filter by Name(Not Starts With School)");
             }
         }
 

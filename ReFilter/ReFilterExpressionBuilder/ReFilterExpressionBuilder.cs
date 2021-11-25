@@ -54,8 +54,11 @@ namespace ReFilter.ReFilterExpressionBuilder
         {
             var mask = new List<OperatorComparer>{
                 OperatorComparer.Contains,
+                OperatorComparer.NotContains,
                 OperatorComparer.StartsWith,
-                OperatorComparer.EndsWith
+                OperatorComparer.NotStartsWith,
+                OperatorComparer.EndsWith,
+                OperatorComparer.NotEndsWith
             };
 
             var numericMask = new List<OperatorComparer>
@@ -81,16 +84,31 @@ namespace ReFilter.ReFilterExpressionBuilder
 
         private static Expression BuildStringCondition(Expression left, OperatorComparer comparer, Expression right)
         {
+            var isNot = false;
+            var operatorName = Enum.GetName(typeof(OperatorComparer), comparer);
+            if (operatorName.Contains("Not"))
+            {
+                isNot = true;
+                operatorName = operatorName.Replace("Not", "");
+            }
+
             // Single or first, we'll need to debug
             var compareMethod = typeof(string).GetMethods()
                 .Single(m => m.GetParameters().Any(p => p.ParameterType == typeof(string))
-                    && m.Name.Equals(Enum.GetName(typeof(OperatorComparer), comparer)) && m.GetParameters().Count() == 1);
+                    && m.Name.Equals(operatorName) && m.GetParameters().Count() == 1);
             //we assume ignoreCase, so call ToLower on paramter and memberexpression
             var toLowerMethod = typeof(string).GetMethods()
                 .Single(m => m.Name.Equals("ToLower") && m.GetParameters().Count() == 0);
             left = Expression.Call(left, toLowerMethod);
             right = Expression.Call(right, toLowerMethod);
-            return Expression.Call(left, compareMethod, right);
+            if (isNot)
+            {
+                return Expression.Not(Expression.Call(left, compareMethod, right));
+            }
+            else
+            {
+                return Expression.Call(left, compareMethod, right);
+            }
         }
 
         private static Expression MakeLambda(Expression parameter, Expression predicate)
