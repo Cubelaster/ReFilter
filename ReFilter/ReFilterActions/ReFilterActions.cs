@@ -244,104 +244,13 @@ namespace ReFilter.ReFilterActions
                     var filterValue = filterValues[fv];
                     if (filterValue.GetType().Name == typeof(RangeFilter<>).Name)
                     {
-                        var newPropertyFilterConfigs = new List<PropertyFilterConfig>();
                         var selectedPfc = request.PropertyFilterConfigs?.FirstOrDefault(pfc => pfc.PropertyName == fv);
 
-                        var filterValueValues = filterValue.GetObjectPropertiesWithValue();
-                        filterValueValues.TryGetValue("Start", out object lowValue);
-                        filterValueValues.TryGetValue("End", out object highValue);
-
-                        if (selectedPfc.OperatorComparer is OperatorComparer.BetweenExclusive)
-                        {
-                            if (lowValue != null)
-                            {
-                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                                {
-                                    OperatorComparer = OperatorComparer.GreaterThan,
-                                    PropertyName = selectedPfc.PropertyName,
-                                    Value = lowValue
-                                });
-                            }
-
-                            if (highValue != null)
-                            {
-                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                                {
-                                    OperatorComparer = OperatorComparer.LessThan,
-                                    PropertyName = selectedPfc.PropertyName,
-                                    Value = highValue
-                                });
-                            }
-                        }
-
-                        if (selectedPfc.OperatorComparer is OperatorComparer.BetweenInclusive)
-                        {
-                            if (lowValue != null)
-                            {
-                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                                {
-                                    OperatorComparer = OperatorComparer.GreaterThanOrEqual,
-                                    PropertyName = selectedPfc.PropertyName,
-                                    Value = lowValue
-                                });
-                            }
-
-                            if (highValue != null)
-                            {
-                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                                {
-                                    OperatorComparer = OperatorComparer.LessThanOrEqual,
-                                    PropertyName = selectedPfc.PropertyName,
-                                    Value = highValue
-                                });
-                            }
-                        }
-
-                        if (selectedPfc.OperatorComparer is OperatorComparer.BetweenHigherInclusive)
-                        {
-                            if (lowValue != null)
-                            {
-                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                                {
-                                    OperatorComparer = OperatorComparer.GreaterThan,
-                                    PropertyName = selectedPfc.PropertyName,
-                                    Value = lowValue
-                                });
-                            }
-
-                            if (highValue != null)
-                            {
-                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                                {
-                                    OperatorComparer = OperatorComparer.LessThanOrEqual,
-                                    PropertyName = selectedPfc.PropertyName,
-                                    Value = highValue
-                                });
-                            }
-                        }
-
-                        if (selectedPfc.OperatorComparer is OperatorComparer.BetweenLowerInclusive)
-                        {
-                            if (lowValue != null)
-                            {
-                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                                {
-                                    OperatorComparer = OperatorComparer.GreaterThanOrEqual,
-                                    PropertyName = selectedPfc.PropertyName,
-                                    Value = lowValue
-                                });
-                            }
-
-                            if (highValue != null)
-                            {
-                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                                {
-                                    OperatorComparer = OperatorComparer.LessThan,
-                                    PropertyName = selectedPfc.PropertyName,
-                                    Value = highValue
-                                });
-                            }
-                        }
+                        Type type = filterValue.GetType().GetGenericArguments()[0];
+                        var methodInfo = GetType().GetMethod(nameof(UnpackRangeFilter))
+                             .MakeGenericMethod(type);
+                        List<PropertyFilterConfig> newPropertyFilterConfigs = (List<PropertyFilterConfig>)
+                            methodInfo.Invoke(this, new object[] { filterValue, selectedPfc });
 
                         newPropertyFilterConfigs.ForEach(npfc =>
                         {
@@ -374,6 +283,157 @@ namespace ReFilter.ReFilterActions
             }
 
             return query;
+        }
+
+        public List<PropertyFilterConfig> UnpackRangeFilter<U>(RangeFilter<U> rangeFilter, PropertyFilterConfig selectedPfc) where U : struct
+        {
+            var newPropertyFilterConfigs = new List<PropertyFilterConfig>();
+
+            var lowValue = rangeFilter.Start;
+            var highValue = rangeFilter.End;
+
+            switch (selectedPfc.OperatorComparer)
+            {
+                case OperatorComparer.BetweenExclusive:
+                    if (lowValue != null)
+                    {
+                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.GreaterThan,
+                            PropertyName = selectedPfc.PropertyName,
+                            Value = lowValue
+                        });
+                    }
+
+                    if (highValue != null)
+                    {
+                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.LessThan,
+                            PropertyName = selectedPfc.PropertyName,
+                            Value = highValue
+                        });
+                    }
+                    break;
+                case OperatorComparer.BetweenInclusive:
+                    if (lowValue != null)
+                    {
+                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.GreaterThanOrEqual,
+                            PropertyName = selectedPfc.PropertyName,
+                            Value = lowValue
+                        });
+                    }
+
+                    if (highValue != null)
+                    {
+                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.LessThanOrEqual,
+                            PropertyName = selectedPfc.PropertyName,
+                            Value = highValue
+                        });
+                    }
+                    break;
+                case OperatorComparer.BetweenHigherInclusive:
+                    if (lowValue != null)
+                    {
+                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.GreaterThan,
+                            PropertyName = selectedPfc.PropertyName,
+                            Value = lowValue
+                        });
+                    }
+
+                    if (highValue != null)
+                    {
+                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.LessThanOrEqual,
+                            PropertyName = selectedPfc.PropertyName,
+                            Value = highValue
+                        });
+                    }
+                    break;
+                case OperatorComparer.BetweenLowerInclusive:
+                    if (lowValue != null)
+                    {
+                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.GreaterThanOrEqual,
+                            PropertyName = selectedPfc.PropertyName,
+                            Value = lowValue
+                        });
+                    }
+
+                    if (highValue != null)
+                    {
+                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.LessThan,
+                            PropertyName = selectedPfc.PropertyName,
+                            Value = highValue
+                        });
+                    }
+                    break;
+                case OperatorComparer.LessThan:
+                    newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                    {
+                        OperatorComparer = selectedPfc.OperatorComparer,
+                        PropertyName = selectedPfc.PropertyName,
+                        Value = lowValue ?? highValue
+                    });
+                    break;
+                case OperatorComparer.LessThanOrEqual:
+                    newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                    {
+                        OperatorComparer = selectedPfc.OperatorComparer,
+                        PropertyName = selectedPfc.PropertyName,
+                        Value = lowValue ?? highValue
+                    });
+                    break;
+                case OperatorComparer.GreaterThan:
+                    newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                    {
+                        OperatorComparer = selectedPfc.OperatorComparer,
+                        PropertyName = selectedPfc.PropertyName,
+                        Value = lowValue ?? highValue
+                    });
+                    break;
+                case OperatorComparer.GreaterThanOrEqual:
+                    newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                    {
+                        OperatorComparer = selectedPfc.OperatorComparer,
+                        PropertyName = selectedPfc.PropertyName,
+                        Value = lowValue ?? highValue
+                    });
+                    break;
+                default:
+                    if (lowValue != null)
+                    {
+                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.GreaterThan,
+                            PropertyName = selectedPfc.PropertyName,
+                            Value = lowValue
+                        });
+                    }
+
+                    if (highValue != null)
+                    {
+                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.LessThan,
+                            PropertyName = selectedPfc.PropertyName,
+                            Value = highValue
+                        });
+                    }
+                    break;
+            }
+
+            return newPropertyFilterConfigs;
         }
 
         //public List<PropertyFilterConfig> Unpack(object filterObject, PagedRequest request)

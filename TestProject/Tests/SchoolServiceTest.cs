@@ -147,7 +147,7 @@ namespace TestProject.Tests
                             PropertyName = "Age"
                         }
                     }
-                }).Returns(33).SetName("Mapped: Filter by Age(Between Exclusive)");
+                }).Returns(33).SetName("Mapped: Range Filter by Age(Between Exclusive)");
 
                 yield return new TestCaseData(new BasePagedRequest
                 {
@@ -162,7 +162,7 @@ namespace TestProject.Tests
                             PropertyName = "Age"
                         }
                     }
-                }).Returns(67).SetName("Mapped: Filter by Age(Between Exclusive No Low)");
+                }).Returns(67).SetName("Mapped: Range Filter by Age(Between Exclusive No Low)");
             }
         }
 
