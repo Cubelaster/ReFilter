@@ -241,15 +241,129 @@ namespace ReFilter.ReFilterActions
             {
                 filterValues.Keys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk)).ToList().ForEach(fv =>
                 {
-                    var selectedPfc = request.PropertyFilterConfigs?.FirstOrDefault(pfc => pfc.PropertyName == fv)
-                    ?? new PropertyFilterConfig
+                    var filterValue = filterValues[fv];
+                    if (filterValue.GetType().Name == typeof(RangeFilter<>).Name)
                     {
-                        PropertyName = fv
-                    };
-                    selectedPfc.Value = filterValues[fv];
+                        var newPropertyFilterConfigs = new List<PropertyFilterConfig>();
+                        var selectedPfc = request.PropertyFilterConfigs?.FirstOrDefault(pfc => pfc.PropertyName == fv);
 
-                    var predicate = ReFilterExpressionBuilder.ReFilterExpressionBuilder.BuildPredicate<T>(selectedPfc);
-                    query = query.Where(predicate);
+                        var filterValueValues = filterValue.GetObjectPropertiesWithValue();
+                        filterValueValues.TryGetValue("Start", out object lowValue);
+                        filterValueValues.TryGetValue("End", out object highValue);
+
+                        if (selectedPfc.OperatorComparer is OperatorComparer.BetweenExclusive)
+                        {
+                            if (lowValue != null)
+                            {
+                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                                {
+                                    OperatorComparer = OperatorComparer.GreaterThan,
+                                    PropertyName = selectedPfc.PropertyName,
+                                    Value = lowValue
+                                });
+                            }
+
+                            if (highValue != null)
+                            {
+                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                                {
+                                    OperatorComparer = OperatorComparer.LessThan,
+                                    PropertyName = selectedPfc.PropertyName,
+                                    Value = highValue
+                                });
+                            }
+                        }
+
+                        if (selectedPfc.OperatorComparer is OperatorComparer.BetweenInclusive)
+                        {
+                            if (lowValue != null)
+                            {
+                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                                {
+                                    OperatorComparer = OperatorComparer.GreaterThanOrEqual,
+                                    PropertyName = selectedPfc.PropertyName,
+                                    Value = lowValue
+                                });
+                            }
+
+                            if (highValue != null)
+                            {
+                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                                {
+                                    OperatorComparer = OperatorComparer.LessThanOrEqual,
+                                    PropertyName = selectedPfc.PropertyName,
+                                    Value = highValue
+                                });
+                            }
+                        }
+
+                        if (selectedPfc.OperatorComparer is OperatorComparer.BetweenHigherInclusive)
+                        {
+                            if (lowValue != null)
+                            {
+                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                                {
+                                    OperatorComparer = OperatorComparer.GreaterThan,
+                                    PropertyName = selectedPfc.PropertyName,
+                                    Value = lowValue
+                                });
+                            }
+
+                            if (highValue != null)
+                            {
+                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                                {
+                                    OperatorComparer = OperatorComparer.LessThanOrEqual,
+                                    PropertyName = selectedPfc.PropertyName,
+                                    Value = highValue
+                                });
+                            }
+                        }
+
+                        if (selectedPfc.OperatorComparer is OperatorComparer.BetweenLowerInclusive)
+                        {
+                            if (lowValue != null)
+                            {
+                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                                {
+                                    OperatorComparer = OperatorComparer.GreaterThanOrEqual,
+                                    PropertyName = selectedPfc.PropertyName,
+                                    Value = lowValue
+                                });
+                            }
+
+                            if (highValue != null)
+                            {
+                                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                                {
+                                    OperatorComparer = OperatorComparer.LessThan,
+                                    PropertyName = selectedPfc.PropertyName,
+                                    Value = highValue
+                                });
+                            }
+                        }
+
+                        newPropertyFilterConfigs.ForEach(npfc =>
+                        {
+                            var predicate = new ReFilterExpressionBuilder.ReFilterExpressionBuilder().BuildPredicate<T>(npfc);
+                            query = query.Where(predicate);
+                        });
+                    }
+                    else if (filterValue.GetType() is IReFilterRequest)
+                    {
+
+                    }
+                    else
+                    {
+                        var selectedPfc = request.PropertyFilterConfigs?.FirstOrDefault(pfc => pfc.PropertyName == fv)
+                        ?? new PropertyFilterConfig
+                        {
+                            PropertyName = fv
+                        };
+                        selectedPfc.Value = filterValues[fv];
+                        var predicate = new ReFilterExpressionBuilder.ReFilterExpressionBuilder().BuildPredicate<T>(selectedPfc);
+                        query = query.Where(predicate);
+                    }
                 });
 
                 if (filterValues.Keys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
@@ -261,6 +375,129 @@ namespace ReFilter.ReFilterActions
 
             return query;
         }
+
+        //public List<PropertyFilterConfig> Unpack(object filterObject, PagedRequest request)
+        //{
+        //    var newPropertyFilterConfigs = new List<PropertyFilterConfig>();
+
+        //    var filterValues = filterObject.GetObjectPropertiesWithValue();
+
+        //    filterValues.Where(fv => fv.GetType().Name == typeof(RangeFilter<>).Name).ToList().ForEach(fv =>
+        //    {
+        //        newPropertyFilterConfigs.AddRange(UnpackRangeFilter(fv, request));
+        //        else if (filterValue.GetType() is IReFilterRequest)
+        //        {
+
+        //        }
+        //    });
+
+        //    return newPropertyFilterConfigs;
+        //}
+
+        //public List<PropertyFilterConfig> UnpackRangeFilter(object filterValue, PagedRequest request)
+        //{
+        //    if (filterValue.GetType().Name == typeof(RangeFilter<>).Name)
+        //    {
+        //        var newPropertyFilterConfigs = new List<PropertyFilterConfig>();
+        //        var selectedPfc = request.PropertyFilterConfigs?.FirstOrDefault(pfc => pfc.PropertyName == fv);
+
+        //        var filterValueValues = filterValue.GetObjectPropertiesWithValue();
+        //        filterValueValues.TryGetValue("Start", out object lowValue);
+        //        filterValueValues.TryGetValue("End", out object highValue);
+
+        //        if (selectedPfc.OperatorComparer is OperatorComparer.BetweenExclusive)
+        //        {
+        //            if (lowValue != null)
+        //            {
+        //                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+        //                {
+        //                    OperatorComparer = OperatorComparer.GreaterThan,
+        //                    PropertyName = selectedPfc.PropertyName,
+        //                    Value = lowValue
+        //                });
+        //            }
+
+        //            if (highValue != null)
+        //            {
+        //                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+        //                {
+        //                    OperatorComparer = OperatorComparer.LessThan,
+        //                    PropertyName = selectedPfc.PropertyName,
+        //                    Value = highValue
+        //                });
+        //            }
+        //        }
+
+        //        if (selectedPfc.OperatorComparer is OperatorComparer.BetweenInclusive)
+        //        {
+        //            if (lowValue != null)
+        //            {
+        //                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+        //                {
+        //                    OperatorComparer = OperatorComparer.GreaterThanOrEqual,
+        //                    PropertyName = selectedPfc.PropertyName,
+        //                    Value = lowValue
+        //                });
+        //            }
+
+        //            if (highValue != null)
+        //            {
+        //                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+        //                {
+        //                    OperatorComparer = OperatorComparer.LessThanOrEqual,
+        //                    PropertyName = selectedPfc.PropertyName,
+        //                    Value = highValue
+        //                });
+        //            }
+        //        }
+
+        //        if (selectedPfc.OperatorComparer is OperatorComparer.BetweenHigherInclusive)
+        //        {
+        //            if (lowValue != null)
+        //            {
+        //                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+        //                {
+        //                    OperatorComparer = OperatorComparer.GreaterThan,
+        //                    PropertyName = selectedPfc.PropertyName,
+        //                    Value = lowValue
+        //                });
+        //            }
+
+        //            if (highValue != null)
+        //            {
+        //                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+        //                {
+        //                    OperatorComparer = OperatorComparer.LessThanOrEqual,
+        //                    PropertyName = selectedPfc.PropertyName,
+        //                    Value = highValue
+        //                });
+        //            }
+        //        }
+
+        //        if (selectedPfc.OperatorComparer is OperatorComparer.BetweenLowerInclusive)
+        //        {
+        //            if (lowValue != null)
+        //            {
+        //                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+        //                {
+        //                    OperatorComparer = OperatorComparer.GreaterThanOrEqual,
+        //                    PropertyName = selectedPfc.PropertyName,
+        //                    Value = lowValue
+        //                });
+        //            }
+
+        //            if (highValue != null)
+        //            {
+        //                newPropertyFilterConfigs.Add(new PropertyFilterConfig
+        //                {
+        //                    OperatorComparer = OperatorComparer.LessThan,
+        //                    PropertyName = selectedPfc.PropertyName,
+        //                    Value = highValue
+        //                });
+        //            }
+        //        }
+        //    }
+        //}
 
         #endregion Filtering
 
@@ -288,7 +525,7 @@ namespace ReFilter.ReFilterActions
                             Value = request.SearchQuery
                         };
 
-                        var searchExpression = ReFilterExpressionBuilder.ReFilterExpressionBuilder.BuildPredicate<T>(propertyFilterConfig);
+                        var searchExpression = new ReFilterExpressionBuilder.ReFilterExpressionBuilder().BuildPredicate<T>(propertyFilterConfig);
 
                         predicate = predicate.Or(searchExpression);
                     }

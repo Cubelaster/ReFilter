@@ -10,18 +10,16 @@ namespace ReFilter.ReFilterExpressionBuilder
 {
     public class ReFilterExpressionBuilder
     {
-        public static Expression<Func<T, bool>> BuildPredicate<T>(PropertyFilterConfig propertyFilterConfig)
+        public Expression<Func<T, bool>> BuildPredicate<T>(PropertyFilterConfig propertyFilterConfig)
         {
             var parameterExpression = Expression.Parameter(typeof(T), typeof(T).Name);
             return (Expression<Func<T, bool>>)BuildNavigationExpression(parameterExpression, propertyFilterConfig);
         }
 
-        private static Expression BuildNavigationExpression(Expression parameter, PropertyFilterConfig propertyFilterConfig)
+        private Expression BuildNavigationExpression(Expression parameter, PropertyFilterConfig propertyFilterConfig)
         {
-            var isCollection = typeof(IEnumerable).IsAssignableFrom(parameter.Type);
-
             //if it´s a collection we later need to use the predicate in the methodexpressioncall
-            if (isCollection)
+            if (typeof(IEnumerable).IsAssignableFrom(parameter.Type))
             {
                 var childType = parameter.Type.GetGenericArguments()[0];
                 var childParameter = Expression.Parameter(childType, childType.Name);
@@ -33,7 +31,7 @@ namespace ReFilter.ReFilterExpressionBuilder
             return BuildCondition(parameter, propertyFilterConfig);
         }
 
-        private static Expression BuildSubQuery(Expression parameter, Type childType, Expression predicate)
+        private Expression BuildSubQuery(Expression parameter, Type childType, Expression predicate)
         {
             var anyMethod = typeof(Enumerable).GetMethods().Single(m => m.Name == "Any" && m.GetParameters().Length == 2);
             anyMethod = anyMethod.MakeGenericMethod(childType);
@@ -41,7 +39,7 @@ namespace ReFilter.ReFilterExpressionBuilder
             return MakeLambda(parameter, predicate);
         }
 
-        private static Expression BuildCondition(Expression parameter, PropertyFilterConfig propertyFilterConfig)
+        private Expression BuildCondition(Expression parameter, PropertyFilterConfig propertyFilterConfig)
         {
             var childProperty = parameter.Type.GetProperty(propertyFilterConfig.PropertyName);
             var left = Expression.Property(parameter, childProperty);
@@ -50,7 +48,7 @@ namespace ReFilter.ReFilterExpressionBuilder
             return MakeLambda(parameter, predicate);
         }
 
-        private static Expression BuildComparsion(Expression left, OperatorComparer comparer, Expression right)
+        private Expression BuildComparsion(Expression left, OperatorComparer comparer, Expression right)
         {
             var mask = new List<OperatorComparer>{
                 OperatorComparer.Contains,
@@ -86,7 +84,7 @@ namespace ReFilter.ReFilterExpressionBuilder
             return BuildStringCondition(left, comparer, right);
         }
 
-        private static Expression BuildStringCondition(Expression left, OperatorComparer comparer, Expression right)
+        private Expression BuildStringCondition(Expression left, OperatorComparer comparer, Expression right)
         {
             var isNot = false;
             var operatorName = Enum.GetName(typeof(OperatorComparer), comparer);
@@ -115,7 +113,7 @@ namespace ReFilter.ReFilterExpressionBuilder
             }
         }
 
-        private static Expression MakeLambda(Expression parameter, Expression predicate)
+        private Expression MakeLambda(Expression parameter, Expression predicate)
         {
             var resultParameterVisitor = new ParameterVisitor();
             resultParameterVisitor.Visit(parameter);

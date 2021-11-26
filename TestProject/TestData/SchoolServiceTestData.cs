@@ -27,7 +27,8 @@ namespace TestProject.TestData
                             Alpha2Code = $"Alpha2Code {i}",
                             Description = $"Description {i}",
                         },
-                        IsActive = Convert.ToBoolean(i%2)
+                        IsActive = Convert.ToBoolean(i%2),
+                        Age = i * 10 / 1.7
                     };
 
                     schoolList.Add(newSchool);

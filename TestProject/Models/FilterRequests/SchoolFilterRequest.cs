@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using ReFilter.Attributes;
+using ReFilter.Models;
 using ReFilter.Models.Filtering.Contracts;
 
 namespace TestProject.Models.FilterRequests
@@ -16,6 +17,8 @@ namespace TestProject.Models.FilterRequests
         public List<string> Contacts { get; set; }
         [ReFilterProperty(HasSpecialFilter = true)]
         public List<Student> Students { get; set; }
+
+        public RangeFilter<double> Age { get; set; }
 
         public bool? IsActive { get; set; }
     }

@@ -22,7 +22,7 @@ namespace TestProject.Tests
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10 }).Returns(SchoolServiceTestData.Schools.Count).SetName("Mapped: No Filters");
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{Address: \"School Address 1\"}") }).Returns(1).SetName("Mapped: Filter by Address with no Property Filter Config");
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{Name: 10}") }).Returns(0).SetName("Mapped: Filter by Name(Equals)");
-                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{Name: 10, Address: 10}")}).Returns(0).SetName("Mapped: Filter by Name(Equals) and Address(Equals)");
+                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{Name: 10, Address: 10}") }).Returns(0).SetName("Mapped: Filter by Name(Equals) and Address(Equals)");
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{IsActive: true}") }).Returns(50).SetName("Mapped: Filter by IsActive");
                 yield return new TestCaseData(new BasePagedRequest
                 {
@@ -108,16 +108,61 @@ namespace TestProject.Tests
                 {
                     PageIndex = 0,
                     PageSize = 10,
-                    Where = JObject.Parse("{Name: \"School\"}"),
+                    Where = JObject.Parse("{Id: 10}"),
                     PropertyFilterConfigs = new List<PropertyFilterConfig>
                     {
                         new PropertyFilterConfig
                         {
-                            OperatorComparer = OperatorComparer.NotStartsWith,
-                            PropertyName = "Name"
+                            OperatorComparer = OperatorComparer.GreaterThan,
+                            PropertyName = "Id"
                         }
                     }
-                }).Returns(0).SetName("Mapped: Filter by Name(Not Starts With School)");
+                }).Returns(90).SetName("Mapped: Filter by Id(Greater Than)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Id: 10}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.LessThan,
+                            PropertyName = "Id"
+                        }
+                    }
+                }).Returns(9).SetName("Mapped: Filter by Id(Less Than)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Age: { Start: 200, End: 400 }}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.BetweenExclusive,
+                            PropertyName = "Age"
+                        }
+                    }
+                }).Returns(33).SetName("Mapped: Filter by Age(Between Exclusive)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Age: { End: 400 }}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.BetweenExclusive,
+                            PropertyName = "Age"
+                        }
+                    }
+                }).Returns(67).SetName("Mapped: Filter by Age(Between Exclusive No Low)");
             }
         }
 

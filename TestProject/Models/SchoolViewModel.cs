@@ -12,6 +12,8 @@ namespace TestProject.Models
         public List<string> Contacts { get; set; }
         public List<StudentViewModel> Students { get; set; }
 
+        public double Age { get; set; }
+
         public bool IsActive { get; set; }
     }
 }
