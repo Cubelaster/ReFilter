@@ -163,6 +163,36 @@ namespace TestProject.Tests
                         }
                     }
                 }).Returns(67).SetName("Mapped: Range Filter by Age(Between Exclusive No Low)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Age: { Start: 400 }}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.GreaterThan,
+                            PropertyName = "Age"
+                        }
+                    }
+                }).Returns(32).SetName("Mapped: Range Filter by Age(GreaterThen Low Only)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Age: { Start: 200 }}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.LessThan,
+                            PropertyName = "Age"
+                        }
+                    }
+                }).Returns(33).SetName("Mapped: Range Filter by Age(LessThan Low Only)");
             }
         }
 
