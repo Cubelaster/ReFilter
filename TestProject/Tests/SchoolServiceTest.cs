@@ -193,6 +193,51 @@ namespace TestProject.Tests
                         }
                     }
                 }).Returns(33).SetName("Mapped: Range Filter by Age(LessThan Low Only)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{FoundingDate: { Start: \"1904-02-02\" }}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.GreaterThan,
+                            PropertyName = "FoundingDate"
+                        }
+                    }
+                }).Returns(99).SetName("Mapped: Range Filter by FoundingDate(GreaterThan Low Only)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{FoundingDate: { Start: \"1904-02-02\" }}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.Equals,
+                            PropertyName = "FoundingDate"
+                        }
+                    }
+                }).Returns(1).SetName("Mapped: Range Filter by FoundingDate(Equals Low Only)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{FoundingDate: { Start: \"1904-02-03\" }}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.LessThan,
+                            PropertyName = "FoundingDate"
+                        }
+                    }
+                }).Returns(1).SetName("Mapped: Range Filter by FoundingDate(LessThan Low Only)");
             }
         }
 

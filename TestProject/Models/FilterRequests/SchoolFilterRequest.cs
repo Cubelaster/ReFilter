@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using ReFilter.Attributes;
 using ReFilter.Models;
 using ReFilter.Models.Filtering.Contracts;
@@ -19,6 +20,8 @@ namespace TestProject.Models.FilterRequests
         public List<Student> Students { get; set; }
 
         public RangeFilter<double> Age { get; set; }
+
+        public RangeFilter<DateTime> FoundingDate { get; set; }
 
         public bool? IsActive { get; set; }
     }

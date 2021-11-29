@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using ReFilter.Attributes;
 
 namespace TestProject.Models
@@ -17,6 +18,7 @@ namespace TestProject.Models
         public List<Student> Students { get; set; }
 
         public double Age { get; set; }
+        public DateTime FoundingDate { get; set; }
 
         public bool IsActive { get; set; }
     }

@@ -294,6 +294,21 @@ namespace ReFilter.ReFilterActions
 
             switch (selectedPfc.OperatorComparer)
             {
+                case OperatorComparer.Equals:
+                    newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                    {
+                        OperatorComparer = OperatorComparer.LessThanOrEqual,
+                        PropertyName = selectedPfc.PropertyName,
+                        Value = lowValue ?? highValue
+                    });
+
+                    newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                    {
+                        OperatorComparer = OperatorComparer.GreaterThanOrEqual,
+                        PropertyName = selectedPfc.PropertyName,
+                        Value = lowValue ?? highValue
+                    });
+                    break;
                 case OperatorComparer.BetweenExclusive:
                     if (lowValue != null)
                     {
