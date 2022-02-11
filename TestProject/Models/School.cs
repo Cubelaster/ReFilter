@@ -7,6 +7,7 @@ namespace TestProject.Models
     class School
     {
         public int Id { get; set; }
+        public int IdRange { get; set; }
         [ReFilterProperty]
         public string Name { get; set; }
         [ReFilterProperty]
@@ -19,6 +20,7 @@ namespace TestProject.Models
 
         public double Age { get; set; }
         public DateTime FoundingDate { get; set; }
+        public DateOnly ValidOn { get; set; }
 
         public bool IsActive { get; set; }
     }
