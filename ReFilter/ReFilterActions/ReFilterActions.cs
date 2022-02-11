@@ -5,6 +5,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using LinqKit;
+using Newtonsoft.Json;
+using ReFilter.Converters;
 using ReFilter.Enums;
 using ReFilter.Extensions;
 using ReFilter.Models;
@@ -20,11 +22,19 @@ namespace ReFilter.ReFilterActions
 
         private readonly IReFilterConfigBuilder reFilterTypeMatcher;
         private readonly IReSortConfigBuilder reSortConfigBuilder;
+        // TODO Allow passing from outside
+        private JsonSerializer Serializer { get; set; }
 
         public ReFilterActions(IReFilterConfigBuilder reFilterTypeMatcher, IReSortConfigBuilder reSortConfigBuilder)
         {
             this.reFilterTypeMatcher = reFilterTypeMatcher;
             this.reSortConfigBuilder = reSortConfigBuilder;
+
+            Serializer = new JsonSerializer();
+            Serializer.Converters.Add(new DateOnlyConverter());
+            Serializer.Converters.Add(new DateOnlyNullableConverter());
+            Serializer.Converters.Add(new TimeOnlyConverter());
+            Serializer.Converters.Add(new TimeOnlyNullableConverter());
         }
 
         #endregion Ctors and Members
@@ -232,7 +242,17 @@ namespace ReFilter.ReFilterActions
         public IQueryable<T> FilterObject<T>(IQueryable<T> query, PagedRequest request) where T : class, new()
         {
             var filterObjectType = reFilterTypeMatcher.GetMatchingType<T>();
-            var filterObject = request.Where.ToObject(filterObjectType);
+
+            // This also works
+            //var stringWhere = JsonConvert.SerializeObject(request.Where);
+            //var filterObject = JsonConvert.DeserializeObject(stringWhere, filterObjectType,
+            //    new JsonConverter[] {
+            //        new DateOnlyConverter(),
+            //        new DateOnlyNullableConverter(),
+            //        new TimeOnlyConverter()
+            //    });
+
+            var filterObject = request.Where.ToObject(filterObjectType, Serializer);
 
             var filterValues = filterObject.GetObjectPropertiesWithValue();
             var specialFilterProperties = filterObjectType.GetSpecialFilterProperties();

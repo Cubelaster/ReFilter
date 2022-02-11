@@ -138,6 +138,21 @@ namespace TestProject.Tests
                 {
                     PageIndex = 0,
                     PageSize = 10,
+                    Where = JObject.Parse("{IdRange: { Start: 1, End: 1 }}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.BetweenInclusive,
+                            PropertyName = "IdRange"
+                        }
+                    }
+                }).Returns(1).SetName("Mapped: Range Filter by IdRange(BetweenInclusive)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
                     Where = JObject.Parse("{Age: { Start: 200, End: 400 }}"),
                     PropertyFilterConfigs = new List<PropertyFilterConfig>
                     {
@@ -238,6 +253,21 @@ namespace TestProject.Tests
                         }
                     }
                 }).Returns(1).SetName("Mapped: Range Filter by FoundingDate(LessThan Low Only)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{ValidOn: { Start: \"1904-02-03\" }}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.LessThan,
+                            PropertyName = "ValidOn"
+                        }
+                    }
+                }).Returns(1).SetName("Mapped: Range Filter by ValidOn(LessThan Low Only)");
             }
         }
 
