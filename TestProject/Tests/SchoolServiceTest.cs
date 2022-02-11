@@ -258,7 +258,7 @@ namespace TestProject.Tests
                 {
                     PageIndex = 0,
                     PageSize = 10,
-                    Where = JObject.Parse("{ValidOn: { Start: \"1904-02-03\" }}"),
+                    Where = JObject.Parse("{ValidOn: { Start: \"1904-02-03 00:00:00\" }}"),
                     PropertyFilterConfigs = new List<PropertyFilterConfig>
                     {
                         new PropertyFilterConfig
