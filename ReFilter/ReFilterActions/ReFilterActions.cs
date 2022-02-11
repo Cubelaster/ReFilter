@@ -22,8 +22,7 @@ namespace ReFilter.ReFilterActions
 
         private readonly IReFilterConfigBuilder reFilterTypeMatcher;
         private readonly IReSortConfigBuilder reSortConfigBuilder;
-        // TODO Allow passing from outside
-        private JsonSerializer Serializer { get; set; }
+        private readonly JsonSerializer Serializer;
 
         public ReFilterActions(IReFilterConfigBuilder reFilterTypeMatcher, IReSortConfigBuilder reSortConfigBuilder)
         {
@@ -35,6 +34,14 @@ namespace ReFilter.ReFilterActions
             Serializer.Converters.Add(new DateOnlyNullableConverter());
             Serializer.Converters.Add(new TimeOnlyConverter());
             Serializer.Converters.Add(new TimeOnlyNullableConverter());
+        }
+
+        public ReFilterActions(IReFilterConfigBuilder reFilterTypeMatcher, IReSortConfigBuilder reSortConfigBuilder, JsonSerializer jsonSerializer)
+        {
+            this.reFilterTypeMatcher = reFilterTypeMatcher;
+            this.reSortConfigBuilder = reSortConfigBuilder;
+
+            Serializer = jsonSerializer;
         }
 
         #endregion Ctors and Members
