@@ -423,5 +423,18 @@ namespace TestProject.Tests
 
             return result.RowCount;
         }
+
+        [Test]
+        public async Task MappingTestsStringSearchInherited()
+        {
+            var request = new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "10" };
+            var unitUnderTest = new SchoolService(SchoolServiceTestData.Schools);
+            var result = await unitUnderTest.GetCollegePagedSearchQuery<CollegeViewModel>(request);
+
+            Type type = result.Results.GetType().GetGenericArguments()[0];
+
+            Assert.IsTrue(type == typeof(CollegeViewModel));
+            Assert.IsTrue(result.Results.Count == 4);
+        }
     }
 }

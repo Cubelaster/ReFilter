@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using ReFilter.Enums;
 using ReFilter.Models;
 
@@ -41,7 +42,26 @@ namespace ReFilter.ReFilterExpressionBuilder
 
         private Expression BuildCondition(Expression parameter, PropertyFilterConfig propertyFilterConfig)
         {
-            var childProperty = parameter.Type.GetProperty(propertyFilterConfig.PropertyName);
+            var sameNameProperties = parameter.Type.GetProperties()
+                .Where(p => p.Name == propertyFilterConfig.PropertyName)
+                .ToList();
+
+            PropertyInfo childProperty;
+            if (sameNameProperties.Any() && sameNameProperties.Count > 1)
+            {
+                var declaringTypeName = parameter.Type.Name;
+                var childProperties = parameter.Type.GetProperties()
+                    .Where(e => e.DeclaringType.Name == declaringTypeName)
+                    .ToList();
+
+                childProperty = childProperties.FirstOrDefault();
+            }
+            else
+            {
+                childProperty = sameNameProperties.First();
+            }
+
+            //var childProperty = parameter.Type.GetProperty(propertyFilterConfig.PropertyName);
             var left = Expression.Property(parameter, childProperty);
             var right = Expression.Constant(propertyFilterConfig.Value);
             var predicate = BuildComparsion(left, propertyFilterConfig.OperatorComparer.Value, right);
