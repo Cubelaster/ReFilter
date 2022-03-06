@@ -29,12 +29,12 @@ export interface PropertyFilterConfig {
     value?: any;
 }
 
-export interface BasePagedRequest extends PagedBase {
+export interface BasePagedRequest<T> extends PagedBase {
     /**
      * Where object for 1:1 mapping to entity to be filtered.
      * Only requirenment is that property names are same
      */
-    where: any;
+    where?: T;
 
     /**
      * Defines rules for sorting and filtering
@@ -43,9 +43,19 @@ export interface BasePagedRequest extends PagedBase {
      */
     propertyFilterConfigs?: PropertyFilterConfig[];
 
-    /**Dictionary containing Keys matching PropertyNames and Value matching SortDirection */
-    sorting?: { [key: string]: SortDirection };
-
     /**String SearchQuery meant for searching ANY of the tagged property */
     searchQuery?: string;
+}
+
+export interface PagedResultBase extends PagedBase {
+    pageCount: number;
+    rowCount: number;
+    currentPage: number;
+    firstRowOnPage: number;
+    lastRowOnPage: number;
+}
+
+export interface PagedResult<V extends IBaseViewModel<number | string>> {
+    results: V[];
+    rowCount: number;
 }
