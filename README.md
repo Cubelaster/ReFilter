@@ -17,7 +17,7 @@ To use it, you should inject it inside Startup.cs like so:
 This tells your DI to include the ReFilter bootstraper.  
 Only `AddReFilter` is required. If you don't have any custom filters, you don't need to use anything else.  
 If you do, then you add them as any other service inside your DI.  
-For minimum implementation of required stuff check check [Filtering and Sorting Considerations and Limitations](#markdown-header-filtering-and-sorting-examples)
+For minimum implementation of required stuff check [Filtering and Sorting Examples](#filtering-and-sorting-examples)
 
 And now you're ready to use ReFilter.
 
