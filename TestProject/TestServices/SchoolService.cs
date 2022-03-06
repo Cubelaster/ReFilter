@@ -44,7 +44,7 @@ namespace TestProject.TestServices
 
         public async Task<PagedResult<School>> GetPaged(BasePagedRequest request)
         {
-            var testQueryable = testList.AsQueryable();
+            var testQueryable = testList.AsQueryable(); // Any kind of queryable
 
             var pagedRequest = request.GetPagedRequest(returnResults: true);
 
