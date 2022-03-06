@@ -626,6 +626,9 @@ Again, it's necessary to configure `UserSortBuilder` in order for everyting to a
 Some pending features include recursive filtering over related entities along custom filtering and defining AND/OR clauses for specific filters.  
 Those would be breaking changes and it would take some time. 
 
+Additionally, check the Docs folder for examples of FE requests.  
+If needed, I can give you the AgGrid implementation as well.
+
 Any kind of help or suggestions are welcome.
 
 ## Thank you and I hope you enjoy using ReFilter
