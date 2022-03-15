@@ -16,12 +16,20 @@ namespace ReFilter.Converters
                 return null;
             }
 
-            Regex dateOnlyRegex = new(@"\d{4}-\d{1,2}-\d{1,2}");
-            Match match = dateOnlyRegex.Match((string)reader.Value);
-
-            if (match.Success && match.Groups.Count == 1)
+            if (reader.Value.GetType() == typeof(string))
             {
-                return DateOnly.ParseExact(match.Groups[0].Value, DateFormat, CultureInfo.InvariantCulture);
+                Regex dateOnlyRegex = new(@"\d{4}-\d{1,2}-\d{1,2}");
+                Match match = dateOnlyRegex.Match((string)reader.Value);
+
+                if (match.Success && match.Groups.Count == 1)
+                {
+                    return DateOnly.ParseExact(match.Groups[0].Value, DateFormat, CultureInfo.InvariantCulture);
+                }
+            }
+
+            if (reader.Value.GetType() == typeof(DateTime))
+            {
+                return DateOnly.FromDateTime((DateTime)reader.Value);
             }
 
             return null;

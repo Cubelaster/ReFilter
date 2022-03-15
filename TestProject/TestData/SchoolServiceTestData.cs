@@ -31,7 +31,8 @@ namespace TestProject.TestData
                         IsActive = Convert.ToBoolean(i % 2),
                         Age = i * 10 / 1.7,
                         FoundingDate = new DateTime(1900 + (i * 100) / 24, i % 12 + 1, i % 12 + 1),
-                        ValidOn = new DateOnly(1900 + (i * 100) / 24, i % 12 + 1, i % 12 + 1)
+                        ValidOn = new DateOnly(1900 + (i * 100) / 24, i % 12 + 1, i % 12 + 1),
+                        ValidOnSingle = new DateOnly(1900 + (i * 100) / 24, i % 12 + 1, i % 12 + 1)
                     };
 
                     schoolList.Add(newSchool);

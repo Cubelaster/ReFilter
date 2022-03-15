@@ -24,6 +24,7 @@ namespace TestProject.Models.FilterRequests
 
         public RangeFilter<DateTime> FoundingDate { get; set; }
         public RangeFilter<DateOnly> ValidOn { get; set; }
+        public DateOnly? ValidOnSingle { get; set; }
 
         public bool? IsActive { get; set; }
     }

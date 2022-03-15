@@ -268,6 +268,21 @@ namespace TestProject.Tests
                         }
                     }
                 }).Returns(1).SetName("Mapped: Range Filter by ValidOn(LessThan Low Only)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{ValidOnSingle: \"1916-05-05T00:00:00Z\" }"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.Equals,
+                            PropertyName = "ValidOnSingle"
+                        }
+                    }
+                }).Returns(1).SetName("Mapped: Range Filter by ValidOnSingle(Exact)");
             }
         }
 
@@ -355,6 +370,14 @@ namespace TestProject.Tests
             }
         }
 
+        public static IEnumerable<TestCaseData> TestCasesFilter
+        {
+            get
+            {
+                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{Address: \"School Address 1\"}") }).Returns(1).SetName("Mapped: Filter by Address with no Property Filter Config");
+            }
+        }
+
         [Test]
         [TestCaseSource(nameof(TestCases))]
         [Parallelizable(ParallelScope.All)]
@@ -420,6 +443,21 @@ namespace TestProject.Tests
             {
                 Assert.IsTrue(result.Results.First().Name.Contains("1"));
             }
+
+            return result.RowCount;
+        }
+
+        [Test]
+        [TestCaseSource(nameof(TestCasesFilter))]
+        [Parallelizable(ParallelScope.All)]
+        public async Task<int> MappingTestsFilter(BasePagedRequest request)
+        {
+            var unitUnderTest = new SchoolService(SchoolServiceTestData.Schools);
+            var result = await unitUnderTest.GetPagedMapped<SchoolViewModel>(request);
+
+            Type type = result.Results.GetType().GetGenericArguments()[0];
+
+            Assert.IsTrue(type == typeof(SchoolViewModel));
 
             return result.RowCount;
         }

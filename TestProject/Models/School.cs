@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using ReFilter.Attributes;
+using TestProject.FilterBuilders;
 
 namespace TestProject.Models
 {
+    [ReFilterBuilder(typeof(SchoolFilterBuilder))]
     class School
     {
         public int Id { get; set; }
@@ -21,6 +23,7 @@ namespace TestProject.Models
         public double Age { get; set; }
         public DateTime FoundingDate { get; set; }
         public DateOnly ValidOn { get; set; }
+        public DateOnly ValidOnSingle { get; set; }
 
         public bool IsActive { get; set; }
     }
