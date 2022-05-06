@@ -68,7 +68,6 @@ namespace ReFilter.ReFilterExpressionBuilder
             else if (childProperty.PropertyType.IsClass)
             {
                 // Meant to handle Recursive Search
-
                 List<PropertyInfo> searchableProperties = childProperty.PropertyType.GetSearchableProperties();
                 if (searchableProperties.Any())
                 {

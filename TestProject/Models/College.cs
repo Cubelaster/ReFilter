@@ -4,7 +4,7 @@ namespace TestProject.Models
 {
     internal class College : School
     {
-        [ReFilterProperty(UsedForSearchQuery = true)]
+        [ReFilterProperty]
         public new string Age { get; set; }
     }
 }

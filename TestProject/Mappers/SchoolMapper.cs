@@ -44,7 +44,12 @@ namespace TestProject.Mappers
                 Country = school.Country,
                 Contacts = school.Contacts,
                 Students = school.Students,
-                IsActive = school.IsActive
+                IsActive = school.IsActive,
+                FoundingDate = school.FoundingDate,
+                IdRange = school.IdRange,
+                ValidOn = school.ValidOn,
+                ValidOnSingle = school.ValidOnSingle,
+                Building = school.Building
             };
         }
 
