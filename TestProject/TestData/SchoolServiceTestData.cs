@@ -33,6 +33,30 @@ namespace TestProject.TestData
                         FoundingDate = new DateTime(1900 + (i * 100) / 24, i % 12 + 1, i % 12 + 1),
                         ValidOn = new DateOnly(1900 + (i * 100) / 24, i % 12 + 1, i % 12 + 1),
                         ValidOnSingle = new DateOnly(1900 + (i * 100) / 24, i % 12 + 1, i % 12 + 1)
+                        //Building = new Building
+                        //{
+                        //    Id = i,
+                        //    Name = $"Building Name {i}",
+                        //    BuiltBy = $"Builder {i}",
+                        //    Year = 1900 + i
+                        //},
+                        //Certificates = new List<Certificate>
+                        //{
+                        //    new Certificate
+                        //    {
+                        //        Id = i,
+                        //        Mark = $"C1{i}",
+                        //        Name = $"Certificate1 {i}",
+                        //        Publisher = $"Publisher1 {i}"
+                        //    },
+                        //    new Certificate
+                        //    {
+                        //        Id = i,
+                        //        Mark = $"C2{i}",
+                        //        Name = $"Certificate2 {i}",
+                        //        Publisher = $"Publisher2 {i}"
+                        //    }
+                        //}
                     };
 
                     schoolList.Add(newSchool);

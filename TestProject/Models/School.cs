@@ -26,5 +26,11 @@ namespace TestProject.Models
         public DateOnly ValidOnSingle { get; set; }
 
         public bool IsActive { get; set; }
+
+        //[ReFilterProperty]
+        //public Building Building { get; set; }
+
+        //[ReFilterProperty]
+        //public List<Certificate> Certificates { get; set; }
     }
 }

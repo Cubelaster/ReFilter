@@ -266,6 +266,7 @@ namespace ReFilter.ReFilterActions
 
             if (filterValues.Keys.Any())
             {
+                var expressionBuilder = new ReFilterExpressionBuilder.ReFilterExpressionBuilder();
                 filterValues.Keys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk)).ToList().ForEach(fv =>
                 {
                     var filterValue = filterValues[fv];
@@ -281,13 +282,13 @@ namespace ReFilter.ReFilterActions
 
                         newPropertyFilterConfigs.ForEach(npfc =>
                         {
-                            var predicate = new ReFilterExpressionBuilder.ReFilterExpressionBuilder().BuildPredicate<T>(npfc);
+                            var predicate = expressionBuilder.BuildPredicate<T>(npfc);
                             query = query.Where(predicate);
                         });
                     }
                     else if (filterValue.GetType() is IReFilterRequest)
                     {
-
+                        // Recursive build here?
                     }
                     else
                     {
@@ -297,7 +298,7 @@ namespace ReFilter.ReFilterActions
                             PropertyName = fv
                         };
                         selectedPfc.Value = filterValues[fv];
-                        var predicate = new ReFilterExpressionBuilder.ReFilterExpressionBuilder().BuildPredicate<T>(selectedPfc);
+                        var predicate = expressionBuilder.BuildPredicate<T>(selectedPfc);
                         query = query.Where(predicate);
                     }
                 });
@@ -618,6 +619,7 @@ namespace ReFilter.ReFilterActions
 
                 if (searchableProperties.Any())
                 {
+                    var expressionBuilder = new ReFilterExpressionBuilder.ReFilterExpressionBuilder();
                     foreach (var property in searchableProperties)
                     {
                         var propertyFilterConfig = new PropertyFilterConfig
@@ -627,7 +629,7 @@ namespace ReFilter.ReFilterActions
                             Value = request.SearchQuery
                         };
 
-                        var searchExpression = new ReFilterExpressionBuilder.ReFilterExpressionBuilder().BuildPredicate<T>(propertyFilterConfig);
+                        var searchExpression = expressionBuilder.BuildPredicate<T>(propertyFilterConfig);
 
                         predicate = predicate.Or(searchExpression);
                     }
