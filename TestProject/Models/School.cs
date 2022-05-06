@@ -27,8 +27,8 @@ namespace TestProject.Models
 
         public bool IsActive { get; set; }
 
-        //[ReFilterProperty]
-        //public Building Building { get; set; }
+        [ReFilterProperty]
+        public Building Building { get; set; }
 
         //[ReFilterProperty]
         //public List<Certificate> Certificates { get; set; }

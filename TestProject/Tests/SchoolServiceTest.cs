@@ -292,6 +292,7 @@ namespace TestProject.Tests
             {
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "10" }).Returns(2).SetName("Search Query");
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "100" }).Returns(1).SetName("Search Query 100");
+                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "Builder 100" }).Returns(1).SetName("Search SubQuery 1");
             }
         }
 

@@ -32,14 +32,14 @@ namespace TestProject.TestData
                         Age = i * 10 / 1.7,
                         FoundingDate = new DateTime(1900 + (i * 100) / 24, i % 12 + 1, i % 12 + 1),
                         ValidOn = new DateOnly(1900 + (i * 100) / 24, i % 12 + 1, i % 12 + 1),
-                        ValidOnSingle = new DateOnly(1900 + (i * 100) / 24, i % 12 + 1, i % 12 + 1)
-                        //Building = new Building
-                        //{
-                        //    Id = i,
-                        //    Name = $"Building Name {i}",
-                        //    BuiltBy = $"Builder {i}",
-                        //    Year = 1900 + i
-                        //},
+                        ValidOnSingle = new DateOnly(1900 + (i * 100) / 24, i % 12 + 1, i % 12 + 1),
+                        Building = new Building
+                        {
+                            Id = i,
+                            Name = $"Building Name {i}",
+                            BuiltBy = $"Builder {i}",
+                            Year = 1900 + i
+                        }
                         //Certificates = new List<Certificate>
                         //{
                         //    new Certificate

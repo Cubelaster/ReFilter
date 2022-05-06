@@ -283,7 +283,7 @@ namespace ReFilter.ReFilterActions
                         newPropertyFilterConfigs.ForEach(npfc =>
                         {
                             var predicate = expressionBuilder.BuildPredicate<T>(npfc);
-                            query = query.Where(predicate);
+                            query = query.Where(predicate[0]);
                         });
                     }
                     else if (filterValue.GetType() is IReFilterRequest)
@@ -299,7 +299,7 @@ namespace ReFilter.ReFilterActions
                         };
                         selectedPfc.Value = filterValues[fv];
                         var predicate = expressionBuilder.BuildPredicate<T>(selectedPfc);
-                        query = query.Where(predicate);
+                        query = query.Where(predicate[0]);
                     }
                 });
 
@@ -622,16 +622,10 @@ namespace ReFilter.ReFilterActions
                     var expressionBuilder = new ReFilterExpressionBuilder.ReFilterExpressionBuilder();
                     foreach (var property in searchableProperties)
                     {
-                        var propertyFilterConfig = new PropertyFilterConfig
-                        {
-                            OperatorComparer = OperatorComparer.Contains,
-                            PropertyName = property.Name,
-                            Value = request.SearchQuery
-                        };
+                        var propertyFilterConfig = expressionBuilder.BuildSearchPropertyFilterConfig(property, request.SearchQuery);
+                        var searchExpressions = expressionBuilder.BuildPredicate<T>(propertyFilterConfig);
 
-                        var searchExpression = expressionBuilder.BuildPredicate<T>(propertyFilterConfig);
-
-                        predicate = predicate.Or(searchExpression);
+                        searchExpressions.ForEach(searchExpression => predicate.Or(searchExpression));
                     }
                 }
 
