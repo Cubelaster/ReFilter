@@ -96,9 +96,9 @@ namespace ReFilter.ReFilterExpressionBuilder
                 if (searchableProperties.Any())
                 {
                     // This is key for recursion
-                    var childParameter = Expression.Parameter(childType, childType.Name);
-                    var childParameter2 = Expression.Property(parameter, childProperty);
-                    var expressions = new List<Expression>();
+                    var childParameterStandalone = Expression.Parameter(childType, childType.Name);
+                    var childParameter = Expression.Property(parameter, childProperty);
+                    var subExpressions = new List<Expression>();
 
                     var childBuilderMethod = typeof(ReFilterExpressionBuilder).GetMethod(nameof(BuildNavigationExpression), BindingFlags.NonPublic | BindingFlags.Instance);
                     var childNavigationExpressionBuilder = childBuilderMethod.MakeGenericMethod(childType);
@@ -107,15 +107,29 @@ namespace ReFilter.ReFilterExpressionBuilder
                     searchableProperties.ForEach(e =>
                     {
                         var newPropertyFilterConfig = BuildSearchPropertyFilterConfig(e, (string)propertyFilterConfig.Value);
-                        //var newPredicates = BuildNavigationExpression<T>(childParameter, newPropertyFilterConfig);
-                        var metchodCallExpression = Expression.Call(newInstance, childNavigationExpressionBuilder, Expression.Constant(childParameter2), Expression.Constant(newPropertyFilterConfig));
-                        var subExpressions = Expression.Lambda<Func<List<Expression>>>(metchodCallExpression).Compile()();
-                        //var newPredicates = (Expression)Expression.Call(childNavigationExpressionBuilder, childParameter2, childParameter);
-                        //newPredicates.ForEach(np => expressions.AddRange(BuildSubQuery<T>(childParameter2, childType, np)));
-                        //expressions.AddRange((List<Expression<Func<T, bool>>>)newPredicates);
+                        var methodCallExpression = Expression.Call(newInstance, childNavigationExpressionBuilder, 
+                            Expression.Constant(childParameterStandalone), Expression.Constant(newPropertyFilterConfig));
+                        subExpressions.AddRange(Expression.Lambda<Func<List<Expression>>>(methodCallExpression).Compile()());
                     });
 
-                    return expressions;
+                    var childExpressions = new List<Expression>();
+                    var childSubQueryBuilderMethod = typeof(ReFilterExpressionBuilder).GetMethod(nameof(BuildSubQuery), BindingFlags.NonPublic | BindingFlags.Instance);
+                    var childSubQueryBuilder = childSubQueryBuilderMethod.MakeGenericMethod(childType);
+
+                    subExpressions.ForEach(subExpression =>
+                    {
+                        //var methodCallExpression = Expression.Call(newInstance, childSubQueryBuilder,
+                        //    Expression.Constant(childParameter), Expression.Constant(childType), Expression.Constant(parameter));
+                        //childExpressions.AddRange(Expression.Lambda<Func<List<Expression>>>(methodCallExpression).Compile()());
+                        childExpressions.AddRange(BuildSubQuery<T>(childParameter, childType, subExpression));
+                    });
+
+                    //var newPredicates = BuildNavigationExpression<T>(childParameter, newPropertyFilterConfig);
+                    //var newPredicates = (Expression)Expression.Call(childNavigationExpressionBuilder, childParameter2, childParameter);
+                    //newPredicates.ForEach(np => expressions.AddRange(BuildSubQuery<T>(childParameter2, childType, np)));
+                    //expressions.AddRange((List<Expression<Func<T, bool>>>)newPredicates);
+
+                    return childExpressions;
                 }
                 else
                 {

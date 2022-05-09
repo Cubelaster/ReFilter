@@ -294,7 +294,9 @@ namespace TestProject.Tests
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "100" }).Returns(1).SetName("Search Query 100");
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "Builder 100" }).Returns(1).SetName("Search SubQuery 1");
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "Builder 10" }).Returns(2).SetName("Search SubQuery 2");
-                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "C11" }).Returns(2).SetName("Search SubQuery Certificates 1");
+                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "C1100" }).Returns(1).SetName("Search SubQuery Certificates Mark 1");
+                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "C110" }).Returns(2).SetName("Search SubQuery Certificates Mark 2");
+                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, SearchQuery = "Certificate2 10" }).Returns(2).SetName("Search SubQuery Certificates Name 2");
             }
         }
 
