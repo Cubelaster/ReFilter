@@ -204,16 +204,12 @@ namespace ReFilter.ReFilterExpressionBuilder
                 .Single(m => m.GetParameters().Any(p => p.ParameterType == typeof(string))
                     && m.Name.Equals(operatorName) && m.GetParameters().Count() == 1);
             //we assume ignoreCase, so call ToLower on paramter and memberexpression
-            //var toLowerMethod = typeof(string).GetMethods()
-            //    .Single(m => m.Name.Equals("ToLower") && m.GetParameters().Count() == 0);
+            var toLowerMethod = typeof(string).GetMethods()
+                .Single(m => m.Name.Equals("ToLower") && m.GetParameters().Count() == 0);
 
-            //left = Expression.Call(left, toLowerMethod);
-            //right = Expression.Call(right, toLowerMethod);
+            left = Expression.Call(Expression.Coalesce(left, Expression.Constant(string.Empty)), toLowerMethod);
+            right = Expression.Call(right, toLowerMethod);
 
-            var toLowerSafeMethod = typeof(StringExtensions).GetMethod(nameof(StringExtensions.NullSafeToLower));
-
-            left = Expression.Call(null, toLowerSafeMethod, left);
-            right = Expression.Call(null, toLowerSafeMethod, right);
             if (isNot)
             {
                 return Expression.Not(Expression.Call(left, compareMethod, right));
@@ -222,6 +218,11 @@ namespace ReFilter.ReFilterExpressionBuilder
             {
                 return Expression.Call(left, compareMethod, right);
             }
+        }
+
+        private Expression NullCheck(Expression toCheck)
+        {
+            return Expression.Not(Expression.Equal(toCheck, Expression.Constant(null, toCheck.Type)));
         }
 
         private Expression MakeLambda(Expression parameter, Expression predicate)
