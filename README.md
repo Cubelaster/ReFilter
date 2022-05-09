@@ -95,8 +95,11 @@ To trigger Search you need to pass the `SearchQuery` value to ReFilter query and
 
 #### Considerations and Limitations
 
-Currently it's not possible to use Search for values inside child entites. String search is expensive and going through a tree of entites searching for a string is very expensive. That's why this is currently not enabled. It might be at some point as a custom implementation like Filter and Sort have.  
-Search is combined with every other feature as an AND clause.
+Since V.1.1.0 it is possible to use Search values inside child entites and child collections.  
+ReFilter recognizes any object or array type marked with "UsedForSearchQuery" as another branch for going through Search value.
+String search is expensive and going through a tree of entites searching for a string is very expensive. 
+Search itself is combined as an OR clause but is combined with every other feature as an AND clause.  
+Pending: Custom search provider in form of a Func<T, bool>.
 
 ### Filtering
 
