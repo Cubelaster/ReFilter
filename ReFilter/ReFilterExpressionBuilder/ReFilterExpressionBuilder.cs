@@ -19,9 +19,9 @@ namespace ReFilter.ReFilterExpressionBuilder
         public List<Expression<Func<T, bool>>> BuildPredicate<T>(PropertyFilterConfig propertyFilterConfig)
         {
             var parameterExpression = Expression.Parameter(typeof(T), typeof(T).Name);
-            return (List<Expression<Func<T, bool>>>)
-                BuildNavigationExpression<T>(parameterExpression, propertyFilterConfig)
-                    .Cast<Expression<Func<T, bool>>>();
+            return BuildNavigationExpression<T>(parameterExpression, propertyFilterConfig)
+                    .Cast<Expression<Func<T, bool>>>()
+                    .ToList();
         }
 
         public PropertyFilterConfig BuildSearchPropertyFilterConfig(PropertyInfo property, string searchQuery)
@@ -55,7 +55,7 @@ namespace ReFilter.ReFilterExpressionBuilder
             }
         }
 
-        private List<Expression<Func<T, bool>>> BuildNavigationExpression<T>(Expression parameter, PropertyFilterConfig propertyFilterConfig)
+        private List<Expression> BuildNavigationExpression<T>(Expression parameter, PropertyFilterConfig propertyFilterConfig)
         {
             PropertyInfo childProperty = GetChildProperty(parameter, propertyFilterConfig);
 
@@ -63,7 +63,7 @@ namespace ReFilter.ReFilterExpressionBuilder
                 || childProperty.PropertyType.IsValueType || childProperty.PropertyType.Name == "String")
             {
                 // Meant to handle all strings and similar simple stuff
-                return new List<Expression<Func<T, bool>>> { BuildCondition<T>(parameter, propertyFilterConfig) };
+                return new List<Expression> { BuildCondition<T>(parameter, propertyFilterConfig) };
             }
             else if (childProperty.PropertyType.IsClass && !typeof(IEnumerable).IsAssignableFrom(childProperty.PropertyType))
             {
@@ -73,7 +73,7 @@ namespace ReFilter.ReFilterExpressionBuilder
                 {
                     // This is key for recursion
                     var childParameter = Expression.Property(parameter, childProperty);
-                    var expressions = new List<Expression<Func<T, bool>>>();
+                    var expressions = new List<Expression>();
                     searchableProperties.ForEach(e =>
                     {
                         var newPropertyFilterConfig = BuildSearchPropertyFilterConfig(e, (string)propertyFilterConfig.Value);
@@ -84,7 +84,7 @@ namespace ReFilter.ReFilterExpressionBuilder
                 }
                 else
                 {
-                    return new List<Expression<Func<T, bool>>>();
+                    return new List<Expression>();
                 }
             }
             else if (typeof(IEnumerable).IsAssignableFrom(childProperty.PropertyType))
@@ -98,7 +98,7 @@ namespace ReFilter.ReFilterExpressionBuilder
                     // This is key for recursion
                     var childParameter = Expression.Parameter(childType, childType.Name);
                     var childParameter2 = Expression.Property(parameter, childProperty);
-                    var expressions = new List<Expression<Func<T, bool>>>();
+                    var expressions = new List<Expression>();
 
                     var childBuilderMethod = typeof(ReFilterExpressionBuilder).GetMethod(nameof(BuildNavigationExpression), BindingFlags.NonPublic | BindingFlags.Instance);
                     var childNavigationExpressionBuilder = childBuilderMethod.MakeGenericMethod(childType);
@@ -119,24 +119,24 @@ namespace ReFilter.ReFilterExpressionBuilder
                 }
                 else
                 {
-                    return new List<Expression<Func<T, bool>>>();
+                    return new List<Expression>();
                 }
             }
             else
             {
-                return new List<Expression<Func<T, bool>>> { BuildCondition<T>(parameter, propertyFilterConfig) };
+                return new List<Expression> { BuildCondition<T>(parameter, propertyFilterConfig) };
             }
         }
 
-        private List<Expression<Func<T, bool>>> BuildSubQuery<T>(Expression parameter, Type childType, Expression predicate)
+        private List<Expression> BuildSubQuery<T>(Expression parameter, Type childType, Expression predicate)
         {
             var anyMethod = typeof(Enumerable).GetMethods().Single(m => m.Name == "Any" && m.GetParameters().Length == 2);
             anyMethod = anyMethod.MakeGenericMethod(childType);
             predicate = Expression.Call(anyMethod, parameter, predicate);
-            return new List<Expression<Func<T, bool>>> { (Expression<Func<T, bool>>)MakeLambda(parameter, predicate) };
+            return new List<Expression> { MakeLambda(parameter, predicate) };
         }
 
-        private Expression<Func<T, bool>> BuildCondition<T>(Expression parameter, PropertyFilterConfig propertyFilterConfig)
+        private Expression BuildCondition<T>(Expression parameter, PropertyFilterConfig propertyFilterConfig)
         {
             PropertyInfo childProperty = GetChildProperty(parameter, propertyFilterConfig);
 
@@ -144,7 +144,7 @@ namespace ReFilter.ReFilterExpressionBuilder
             var left = Expression.Property(parameter, childProperty);
             var right = Expression.Constant(propertyFilterConfig.Value);
             var predicate = BuildComparsion(left, propertyFilterConfig.OperatorComparer.Value, right);
-            return (Expression<Func<T, bool>>)MakeLambda(parameter, predicate);
+            return MakeLambda(parameter, predicate);
         }
 
         private Expression BuildComparsion(Expression left, OperatorComparer comparer, Expression right)
