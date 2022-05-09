@@ -49,7 +49,8 @@ namespace TestProject.Mappers
                 IdRange = school.IdRange,
                 ValidOn = school.ValidOn,
                 ValidOnSingle = school.ValidOnSingle,
-                Building = school.Building
+                Building = school.Building,
+                Certificates = school.Certificates
             };
         }
 
