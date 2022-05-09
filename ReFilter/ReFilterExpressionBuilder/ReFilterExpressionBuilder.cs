@@ -65,7 +65,7 @@ namespace ReFilter.ReFilterExpressionBuilder
                 // Meant to handle all strings and similar simple stuff
                 return new List<Expression<Func<T, bool>>> { BuildCondition<T>(parameter, propertyFilterConfig) };
             }
-            else if (childProperty.PropertyType.IsClass)
+            else if (childProperty.PropertyType.IsClass && !typeof(IEnumerable).IsAssignableFrom(childProperty.PropertyType))
             {
                 // Meant to handle Recursive Search
                 List<PropertyInfo> searchableProperties = childProperty.PropertyType.GetSearchableProperties();
@@ -91,10 +91,36 @@ namespace ReFilter.ReFilterExpressionBuilder
             {
                 // if it´s a collection we later need to use the predicate in the methodexpressioncall
                 var childType = childProperty.PropertyType.GenericTypeArguments[0];
-                var childParameter = Expression.Parameter(childType, childType.Name);
-                var newPredicate = BuildNavigationExpression<T>(childParameter, propertyFilterConfig);
+                List<PropertyInfo> searchableProperties = childType.GetSearchableProperties();
 
-                return new List<Expression<Func<T, bool>>> { BuildSubQuery<T>(childParameter, childType, newPredicate.FirstOrDefault()) };
+                if (searchableProperties.Any())
+                {
+                    // This is key for recursion
+                    var childParameter = Expression.Parameter(childType, childType.Name);
+                    var childParameter2 = Expression.Property(parameter, childProperty);
+                    var expressions = new List<Expression<Func<T, bool>>>();
+
+                    var childBuilderMethod = typeof(ReFilterExpressionBuilder).GetMethod(nameof(BuildNavigationExpression), BindingFlags.NonPublic | BindingFlags.Instance);
+                    var childNavigationExpressionBuilder = childBuilderMethod.MakeGenericMethod(childType);
+                    var newInstance = Expression.New(typeof(ReFilterExpressionBuilder));
+
+                    searchableProperties.ForEach(e =>
+                    {
+                        var newPropertyFilterConfig = BuildSearchPropertyFilterConfig(e, (string)propertyFilterConfig.Value);
+                        //var newPredicates = BuildNavigationExpression<T>(childParameter, newPropertyFilterConfig);
+                        var metchodCallExpression = Expression.Call(newInstance, childNavigationExpressionBuilder, Expression.Constant(childParameter2), Expression.Constant(newPropertyFilterConfig));
+                        var subExpressions = Expression.Lambda<Func<List<Expression>>>(metchodCallExpression).Compile()();
+                        //var newPredicates = (Expression)Expression.Call(childNavigationExpressionBuilder, childParameter2, childParameter);
+                        //newPredicates.ForEach(np => expressions.AddRange(BuildSubQuery<T>(childParameter2, childType, np)));
+                        //expressions.AddRange((List<Expression<Func<T, bool>>>)newPredicates);
+                    });
+
+                    return expressions;
+                }
+                else
+                {
+                    return new List<Expression<Func<T, bool>>>();
+                }
             }
             else
             {
@@ -102,12 +128,12 @@ namespace ReFilter.ReFilterExpressionBuilder
             }
         }
 
-        private Expression<Func<T, bool>> BuildSubQuery<T>(Expression parameter, Type childType, Expression predicate)
+        private List<Expression<Func<T, bool>>> BuildSubQuery<T>(Expression parameter, Type childType, Expression predicate)
         {
             var anyMethod = typeof(Enumerable).GetMethods().Single(m => m.Name == "Any" && m.GetParameters().Length == 2);
             anyMethod = anyMethod.MakeGenericMethod(childType);
             predicate = Expression.Call(anyMethod, parameter, predicate);
-            return (Expression<Func<T, bool>>)MakeLambda(parameter, predicate);
+            return new List<Expression<Func<T, bool>>> { (Expression<Func<T, bool>>)MakeLambda(parameter, predicate) };
         }
 
         private Expression<Func<T, bool>> BuildCondition<T>(Expression parameter, PropertyFilterConfig propertyFilterConfig)
