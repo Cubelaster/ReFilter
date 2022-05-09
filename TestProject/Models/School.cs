@@ -30,7 +30,7 @@ namespace TestProject.Models
         [ReFilterProperty]
         public Building Building { get; set; }
 
-        //[ReFilterProperty]
-        //public List<Certificate> Certificates { get; set; }
+        [ReFilterProperty]
+        public List<Certificate> Certificates { get; set; }
     }
 }

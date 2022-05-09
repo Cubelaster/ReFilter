@@ -39,24 +39,24 @@ namespace TestProject.TestData
                             Name = $"Building Name {i}",
                             BuiltBy = $"Builder {i}",
                             Year = 1900 + i
+                        },
+                        Certificates = new List<Certificate>
+                        {
+                            new Certificate
+                            {
+                                Id = i,
+                                Mark = $"C1{i}",
+                                Name = $"Certificate1 {i}",
+                                Publisher = $"Publisher1 {i}"
+                            },
+                            new Certificate
+                            {
+                                Id = i,
+                                Mark = $"C2{i}",
+                                Name = $"Certificate2 {i}",
+                                Publisher = $"Publisher2 {i}"
+                            }
                         }
-                        //Certificates = new List<Certificate>
-                        //{
-                        //    new Certificate
-                        //    {
-                        //        Id = i,
-                        //        Mark = $"C1{i}",
-                        //        Name = $"Certificate1 {i}",
-                        //        Publisher = $"Publisher1 {i}"
-                        //    },
-                        //    new Certificate
-                        //    {
-                        //        Id = i,
-                        //        Mark = $"C2{i}",
-                        //        Name = $"Certificate2 {i}",
-                        //        Publisher = $"Publisher2 {i}"
-                        //    }
-                        //}
                     };
 
                     schoolList.Add(newSchool);
