@@ -6,10 +6,7 @@ namespace ReFilter.Models
 {
     public class PagedRequest : BasePagedRequest
     {
-        public PagedRequest()
-        {
-
-        }
+        public PagedRequest() { }
 
         public PagedRequest(BasePagedRequest pagedRequest)
         {
@@ -17,7 +14,6 @@ namespace ReFilter.Models
             PageSize = pagedRequest.PageSize;
             PropertyFilterConfigs = pagedRequest.PropertyFilterConfigs;
             SearchQuery = pagedRequest.SearchQuery;
-            Sorting = pagedRequest.Sorting;
             Where = pagedRequest.Where;
             ReturnQuery = false;
             ReturnResults = true;
@@ -29,14 +25,8 @@ namespace ReFilter.Models
 
     public class PagedRequest<T, U> : PagedRequest where T : class, new() where U : class, new()
     {
-        public PagedRequest(BasePagedRequest pagedRequest)
+        public PagedRequest(BasePagedRequest pagedRequest) : base(pagedRequest)
         {
-            PageIndex = pagedRequest.PageIndex;
-            PageSize = pagedRequest.PageSize;
-            PropertyFilterConfigs = pagedRequest.PropertyFilterConfigs;
-            SearchQuery = pagedRequest.SearchQuery;
-            Sorting = pagedRequest.Sorting;
-            Where = pagedRequest.Where;
             ReturnQuery = true;
             ReturnResults = false;
             MappingFunction = null;
