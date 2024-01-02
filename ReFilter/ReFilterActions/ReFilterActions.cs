@@ -250,6 +250,8 @@ namespace ReFilter.ReFilterActions
         {
             var filterObjectType = reFilterTypeMatcher.GetMatchingType<T>();
 
+            var conditionsPredicate = PredicateBuilder.New<T>(request.PredicateOperator == PredicateOperator.And);
+
             // This also works
             //var stringWhere = JsonConvert.SerializeObject(request.Where);
             //var filterObject = JsonConvert.DeserializeObject(stringWhere, filterObjectType,
@@ -267,41 +269,46 @@ namespace ReFilter.ReFilterActions
             if (filterValues.Keys.Any())
             {
                 var expressionBuilder = new ReFilterExpressionBuilder.ReFilterExpressionBuilder();
-                filterValues.Keys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk)).ToList().ForEach(fv =>
-                {
-                    var filterValue = filterValues[fv];
-                    if (filterValue.GetType().Name == typeof(RangeFilter<>).Name)
+
+                filterValues.Keys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk))
+                    .ToList().ForEach(fv =>
                     {
-                        var selectedPfc = request.PropertyFilterConfigs?.FirstOrDefault(pfc => pfc.PropertyName == fv);
-
-                        Type type = filterValue.GetType().GetGenericArguments()[0];
-                        var methodInfo = GetType().GetMethod(nameof(UnpackRangeFilter))
-                             .MakeGenericMethod(type);
-                        List<PropertyFilterConfig> newPropertyFilterConfigs = (List<PropertyFilterConfig>)
-                            methodInfo.Invoke(this, new object[] { filterValue, selectedPfc });
-
-                        newPropertyFilterConfigs.ForEach(npfc =>
+                        // Here goes recursion on PFC for AND or OR
+                        var filterValue = filterValues[fv];
+                        if (filterValue.GetType().Name == typeof(RangeFilter<>).Name)
                         {
-                            var predicate = expressionBuilder.BuildPredicate<T>(npfc);
+                            var selectedPfc = request.PropertyFilterConfigs?
+                                .FirstOrDefault(pfc => pfc.PropertyName == fv);
+
+                            Type type = filterValue.GetType().GetGenericArguments()[0];
+                            var methodInfo = GetType().GetMethod(nameof(UnpackRangeFilter))
+                                 .MakeGenericMethod(type);
+
+                            List<PropertyFilterConfig> newPropertyFilterConfigs = (List<PropertyFilterConfig>)
+                                methodInfo.Invoke(this, new object[] { filterValue, selectedPfc });
+
+                            newPropertyFilterConfigs.ForEach(npfc =>
+                            {
+                                var predicate = expressionBuilder.BuildPredicate<T>(npfc);
+                                query = query.Where(predicate[0]);
+                            });
+                        }
+                        else if (filterValue.GetType() is IReFilterRequest)
+                        {
+                            // Recursive build here?
+                        }
+                        else
+                        {
+                            var selectedPfc = request.PropertyFilterConfigs?.FirstOrDefault(pfc => pfc.PropertyName == fv)
+                            ?? new PropertyFilterConfig
+                            {
+                                PropertyName = fv
+                            };
+                            selectedPfc.Value = filterValues[fv];
+                            var predicate = expressionBuilder.BuildPredicate<T>(selectedPfc);
                             query = query.Where(predicate[0]);
-                        });
-                    }
-                    else if (filterValue.GetType() is IReFilterRequest)
-                    {
-                        // Recursive build here?
-                    }
-                    else
-                    {
-                        var selectedPfc = request.PropertyFilterConfigs?.FirstOrDefault(pfc => pfc.PropertyName == fv)
-                        ?? new PropertyFilterConfig
-                        {
-                            PropertyName = fv
-                        };
-                        selectedPfc.Value = filterValues[fv];
-                        var predicate = expressionBuilder.BuildPredicate<T>(selectedPfc);
-                        query = query.Where(predicate[0]);
-                    }
-                });
+                        }
+                    });
 
                 if (filterValues.Keys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
                 {

@@ -15,6 +15,7 @@ namespace ReFilter.Models
             PropertyFilterConfigs = pagedRequest.PropertyFilterConfigs;
             SearchQuery = pagedRequest.SearchQuery;
             Where = pagedRequest.Where;
+            PagedRequests = pagedRequest.PagedRequests;
             ReturnQuery = false;
             ReturnResults = true;
         }

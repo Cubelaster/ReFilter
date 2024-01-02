@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using LinqKit;
 using Newtonsoft.Json.Linq;
 
 namespace ReFilter.Models
 {
     public class BasePagedRequest : PagedBase
     {
+        public PredicateOperator PredicateOperator { get; set; } = PredicateOperator.And;
+
         /// <summary>
         /// Object meant for mapping into query conditions.
         /// Only requirenment is that property names match destination
@@ -26,6 +29,8 @@ namespace ReFilter.Models
         /// String SearchQuery meant for searching ANY of the tagged property
         /// </summary>
         public string SearchQuery { get; set; }
+
+        public List<PagedRequest> PagedRequests { get; set; }
 
         public PagedRequest GetPagedRequest(bool returnQuery = true, bool returnResults = false)
         {
