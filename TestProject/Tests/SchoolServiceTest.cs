@@ -283,6 +283,77 @@ namespace TestProject.Tests
                         }
                     }
                 }).Returns(1).SetName("Mapped: Range Filter by ValidOnSingle(Exact)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{ValidOnSingle: \"1916-05-05T00:00:00Z\" }"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.LessThan,
+                            PropertyName = "ValidOnSingle"
+                        }
+                    }
+                }).Returns(3).SetName("Mapped: Range Filter by ValidOnSingle(LessThan)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{ValidOnSingle: \"1916-05-05T00:00:00Z\" }"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.GreaterThan,
+                            PropertyName = "ValidOnSingle"
+                        }
+                    }
+                }).Returns(96).SetName("Mapped: Range Filter by ValidOnSingle(GreaterThan)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{ValidOnSingle: \"1916-05-05T00:00:00Z\" }"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.GreaterThan,
+                            PropertyName = "ValidOnSingle"
+                        },
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.LessThan,
+                            PredicateOperator = LinqKit.PredicateOperator.Or,
+                            PropertyName = "ValidOnSingle"
+                        }
+                    }
+                }).Returns(99).SetName("Mapped: Range Filter by ValidOnSingle(Or => LessThan + GreaterThan)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{ValidOnSingle: \"1916-05-05T00:00:00Z\" }"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.GreaterThan,
+                            PropertyName = "ValidOnSingle"
+                        },
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.LessThan,
+                            PropertyName = "ValidOnSingle"
+                        }
+                    }
+                }).Returns(0).SetName("Mapped: Range Filter by ValidOnSingle(And => LessThan + GreaterThan)");
             }
         }
 

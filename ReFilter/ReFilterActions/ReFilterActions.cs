@@ -273,10 +273,14 @@ namespace ReFilter.ReFilterActions
                 filterValues.Keys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk))
                     .ToList().ForEach(fv =>
                     {
+                        // Default true allows no filters to pass through as 1=1
+                        var propertyPredicate = PredicateBuilder.New<T>(true);
+
                         // Here goes recursion on PFC for AND or OR
                         var filterValue = filterValues[fv];
                         if (filterValue.GetType().Name == typeof(RangeFilter<>).Name)
                         {
+                            // RangeFilter setup
                             var selectedPfc = request.PropertyFilterConfigs?
                                 .FirstOrDefault(pfc => pfc.PropertyName == fv);
 
@@ -289,24 +293,71 @@ namespace ReFilter.ReFilterActions
 
                             newPropertyFilterConfigs.ForEach(npfc =>
                             {
-                                var predicate = expressionBuilder.BuildPredicate<T>(npfc);
-                                query = query.Where(predicate[0]);
+                                // Default false makes no filters remove all rows as 1=2
+                                var pfcPredicate = PredicateBuilder.New<T>(false);
+                                var innerPredicates = expressionBuilder.BuildPredicate<T>(npfc);
+
+                                innerPredicates.ForEach(newpfc =>
+                                {
+                                    pfcPredicate.And(newpfc);
+                                });
+
+                                propertyPredicate.And(pfcPredicate);
                             });
                         }
                         else if (filterValue.GetType() is IReFilterRequest)
                         {
                             // Recursive build here?
+                            // If we ever want to chain filtering via FilterRequests, here is where we should do it
+                            // And then we would use the IReFilterBuilder.GetForeignKeys here to filter by it
                         }
                         else
                         {
-                            var selectedPfc = request.PropertyFilterConfigs?.FirstOrDefault(pfc => pfc.PropertyName == fv)
-                            ?? new PropertyFilterConfig
+                            var pfcs = request.PropertyFilterConfigs?
+                                .Where(pfc => pfc.PropertyName == fv)?
+                                .Select(pfc =>
+                                {
+                                    pfc.Value ??= filterValues[fv];
+                                    return pfc;
+                                })
+                                .ToList()
+                            ?? new List<PropertyFilterConfig>
                             {
-                                PropertyName = fv
+                                new PropertyFilterConfig {
+                                    PropertyName = fv,
+                                    Value = filterValues[fv],
+                                    PredicateOperator = PredicateOperator.And
+                                }
                             };
-                            selectedPfc.Value = filterValues[fv];
-                            var predicate = expressionBuilder.BuildPredicate<T>(selectedPfc);
-                            query = query.Where(predicate[0]);
+
+                            pfcs.ForEach(pfc =>
+                            {
+                                var pfcPredicate = PredicateBuilder.New<T>(false);
+                                var innerPredicates = expressionBuilder.BuildPredicate<T>(pfc);
+
+                                innerPredicates.ForEach(newpfc =>
+                                {
+                                    pfcPredicate.And(newpfc);
+                                });
+
+                                if (pfc.PredicateOperator == PredicateOperator.And)
+                                {
+                                    propertyPredicate.And(pfcPredicate);
+                                }
+                                else
+                                {
+                                    propertyPredicate.Or(pfcPredicate);
+                                }
+                            });
+                        }
+
+                        if (request.PredicateOperator == PredicateOperator.And)
+                        {
+                            conditionsPredicate.And(propertyPredicate);
+                        }
+                        else
+                        {
+                            conditionsPredicate.Or(propertyPredicate);
                         }
                     });
 
@@ -315,6 +366,8 @@ namespace ReFilter.ReFilterActions
                     var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
                     query = filterBuilder.BuildFilteredQuery(query, filterObject as IReFilterRequest);
                 }
+
+                query = query.Where(conditionsPredicate);
             }
 
             return query;
