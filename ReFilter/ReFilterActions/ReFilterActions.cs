@@ -250,7 +250,9 @@ namespace ReFilter.ReFilterActions
         {
             var filterObjectType = reFilterTypeMatcher.GetMatchingType<T>();
 
-            var conditionsPredicate = PredicateBuilder.New<T>(request.PredicateOperator == PredicateOperator.And);
+            // We generally want to return everything if we don't set filters
+            // true essentially resolves to Where 1=1
+            var conditionsPredicate = PredicateBuilder.New<T>(true);
 
             // This also works
             //var stringWhere = JsonConvert.SerializeObject(request.Where);
@@ -273,10 +275,8 @@ namespace ReFilter.ReFilterActions
                 filterValues.Keys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk))
                     .ToList().ForEach(fv =>
                     {
-                        // Default true allows no filters to pass through as 1=1
                         var propertyPredicate = PredicateBuilder.New<T>(true);
 
-                        // Here goes recursion on PFC for AND or OR
                         var filterValue = filterValues[fv];
                         if (filterValue.GetType().Name == typeof(RangeFilter<>).Name)
                         {
@@ -293,7 +293,8 @@ namespace ReFilter.ReFilterActions
 
                             newPropertyFilterConfigs.ForEach(npfc =>
                             {
-                                // Default false makes no filters remove all rows as 1=2
+                                // false essentially resolves to Where 1=1
+                                // This should generally not happen but failing the filter is better than showing incorrect data
                                 var pfcPredicate = PredicateBuilder.New<T>(false);
                                 var innerPredicates = expressionBuilder.BuildPredicate<T>(npfc);
 
@@ -335,11 +336,13 @@ namespace ReFilter.ReFilterActions
                                 var pfcPredicate = PredicateBuilder.New<T>(false);
                                 var innerPredicates = expressionBuilder.BuildPredicate<T>(pfc);
 
+                                // Inner predicates are all predicates generated to filter accordingly to a pfc
                                 innerPredicates.ForEach(newpfc =>
                                 {
                                     pfcPredicate.And(newpfc);
                                 });
 
+                                // Different pfcs can be used as And/Or clauses
                                 if (pfc.PredicateOperator == PredicateOperator.And)
                                 {
                                     propertyPredicate.And(pfcPredicate);
