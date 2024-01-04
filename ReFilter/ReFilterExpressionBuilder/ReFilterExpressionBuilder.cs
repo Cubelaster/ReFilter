@@ -146,7 +146,6 @@ namespace ReFilter.ReFilterExpressionBuilder
         {
             PropertyInfo childProperty = GetChildProperty(parameter, propertyFilterConfig);
 
-            //var childProperty = parameter.Type.GetProperty(propertyFilterConfig.PropertyName);
             var left = Expression.Property(parameter, childProperty);
             var right = Expression.Constant(propertyFilterConfig.Value);
             var predicate = BuildComparsion(left, propertyFilterConfig.OperatorComparer.Value, right);

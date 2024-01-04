@@ -1,18 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using LinqKit;
 using Newtonsoft.Json.Linq;
-using ReFilter.Enums;
 
 namespace ReFilter.Models
 {
     public class BasePagedRequest : PagedBase
     {
+        public PredicateOperator PredicateOperator { get; set; } = PredicateOperator.And;
+
         /// <summary>
-        /// Where object for 1:1 mapping to entity to be filtered.
-        /// Only requirenment is that property names are same
+        /// Object meant for mapping into query conditions.
+        /// Only requirenment is that property names match destination
         /// </summary>
         public JObject Where { get; set; }
+
+        //public JsonDocument Conditions { get; set; }
 
         /// <summary>
         /// Defines rules for sorting and filtering
@@ -21,27 +25,17 @@ namespace ReFilter.Models
         /// </summary>
         public List<PropertyFilterConfig> PropertyFilterConfigs { get; set; }
 
-        [Obsolete]
-        /// <summary>
-        /// Dictionary containing Keys matching PropertyNames and Value matching SortDirection
-        /// </summary>
-        public Dictionary<string, SortDirection> Sorting { get; set; }
-
         /// <summary>
         /// String SearchQuery meant for searching ANY of the tagged property
         /// </summary>
         public string SearchQuery { get; set; }
 
+        public List<PagedRequest> PagedRequests { get; set; }
+
         public PagedRequest GetPagedRequest(bool returnQuery = true, bool returnResults = false)
         {
-            var pagedRequest = new PagedRequest
+            var pagedRequest = new PagedRequest(this)
             {
-                PageIndex = PageIndex,
-                PageSize = PageSize,
-                PropertyFilterConfigs = PropertyFilterConfigs,
-                SearchQuery = SearchQuery,
-                Sorting = Sorting,
-                Where = Where,
                 ReturnQuery = returnQuery,
                 ReturnResults = returnResults
             };
@@ -53,12 +47,6 @@ namespace ReFilter.Models
         {
             var pagedRequest = new PagedRequest<T, U>(this)
             {
-                PageIndex = PageIndex,
-                PageSize = PageSize,
-                PropertyFilterConfigs = PropertyFilterConfigs,
-                SearchQuery = SearchQuery,
-                Sorting = Sorting,
-                Where = Where,
                 ReturnQuery = returnQuery,
                 ReturnResults = returnResults
             };
