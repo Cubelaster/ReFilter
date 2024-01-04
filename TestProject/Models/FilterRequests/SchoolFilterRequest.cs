@@ -17,8 +17,9 @@ namespace TestProject.Models.FilterRequests
         public CountryFilterRequest Country { get; set; }
 
         public List<string> Contacts { get; set; }
+
         [ReFilterProperty(HasSpecialFilter = true)]
-        public List<Student> Students { get; set; }
+        public List<string> StudentNames { get; set; }
 
         public RangeFilter<double> Age { get; set; }
 

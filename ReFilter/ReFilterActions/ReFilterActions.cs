@@ -252,7 +252,7 @@ namespace ReFilter.ReFilterActions
 
             // We generally want to return everything if we don't set filters
             // true essentially resolves to Where 1=1
-            var conditionsPredicate = PredicateBuilder.New<T>(true);
+            var conditionsPredicate = PredicateBuilder.New(query);
 
             // This also works
             //var stringWhere = JsonConvert.SerializeObject(request.Where);
@@ -367,7 +367,19 @@ namespace ReFilter.ReFilterActions
                 if (filterValues.Keys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
                 {
                     var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
-                    query = filterBuilder.BuildFilteredQuery(query, filterObject as IReFilterRequest);
+                    var predicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest);
+
+                    predicates.ForEach(predicate =>
+                    {
+                        if (request.PredicateOperator == PredicateOperator.And)
+                        {
+                            conditionsPredicate.And(predicate);
+                        }
+                        else
+                        {
+                            conditionsPredicate.Or(predicate);
+                        }
+                    });
                 }
 
                 query = query.Where(conditionsPredicate);

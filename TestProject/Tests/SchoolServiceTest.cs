@@ -354,6 +354,51 @@ namespace TestProject.Tests
                         }
                     }
                 }).Returns(0).SetName("Mapped: Range Filter by ValidOnSingle(And => LessThan + GreaterThan)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{StudentNames: [ \"SchoolName\" ] }"),
+                }).Returns(0).SetName("Mapped: Special Filter on StudentName, No Result (And clause)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{StudentNames: [ \"School Name\" ] }"),
+                }).Returns(100).SetName("Mapped: Special Filter on StudentName, Match All (And clause)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{StudentNames: [ \"School Name\" ], ValidOnSingle: \"1916-05-05T00:00:00Z\" }"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.Equals,
+                            PropertyName = "ValidOnSingle"
+                        }
+                    }
+                }).Returns(1).SetName("Mapped: Special Filter on StudentName, regular on ValidOnSingle (And clause)");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    PredicateOperator = LinqKit.PredicateOperator.Or,
+                    Where = JObject.Parse("{StudentNames: [ \"School Name\" ], ValidOnSingle: \"1916-05-05T00:00:00Z\" }"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.Equals,
+                            PropertyName = "ValidOnSingle"
+                        }
+                    }
+                }).Returns(100).SetName("Mapped: Special Filter on StudentName, regular on ValidOnSingle (Or clause)");
             }
         }
 

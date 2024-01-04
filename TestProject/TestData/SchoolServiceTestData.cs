@@ -20,7 +20,17 @@ namespace TestProject.TestData
                         Name = $"School Name {i}",
                         Address = $"School Address {i}",
                         Contacts = new List<string> { $"Contact {i}", $"Contact {i + 1}" },
-                        Students = new List<Student>(),
+                        Students = new List<Student>
+                        {
+                            new Student
+                            {
+                                Id = i,
+                                FirstName = $"Student Name School Name {i}",
+                                LastName = $"Student LastName School Name {i}",
+                                Age = i,
+                                Gender = Enums.Gender.Male,
+                            }
+                        },
                         Country = new Country
                         {
                             Id = i,

@@ -1,7 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using ReFilter.Models.Filtering.Contracts;
 using ReFilter.ReFilterProvider;
+using TestProject.FilterBuilders.SchoolFilters;
 using TestProject.Models;
 using TestProject.Models.FilterRequests;
 using TestProject.TestData;
@@ -31,9 +34,23 @@ namespace TestProject.FilterBuilders
             return query;
         }
 
+        public List<Expression<Func<School, bool>>> BuildPredicates(IReFilterRequest filterRequest)
+        {
+            var filters = GetFilters(filterRequest).ToList();
+
+            List<Expression<Func<School, bool>>> expressions = new();
+
+            filters.ForEach(filter =>
+            {
+                expressions.Add(filter.GeneratePredicate());
+            });
+
+            return expressions;
+        }
+
         public IEnumerable<IReFilter<School>> GetFilters(IReFilterRequest filterRequest)
         {
-            List<IReFilter<School>> filters = new List<IReFilter<School>>();
+            List<IReFilter<School>> filters = new();
 
             if (filterRequest == null)
             {
@@ -42,10 +59,10 @@ namespace TestProject.FilterBuilders
 
             var realFilter = (SchoolFilterRequest)filterRequest;
 
-            //if (!string.IsNullOrWhiteSpace(realFilter.Name))
-            //{
-            //    filters.Add(new NameFilter(realFilter.Name));
-            //}
+            if (realFilter.StudentNames is not null && realFilter.StudentNames.Any())
+            {
+                filters.Add(new StudentNamesFilter(realFilter.StudentNames));
+            }
 
             return filters;
         }
