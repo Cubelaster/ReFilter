@@ -16,6 +16,7 @@ namespace ReFilter.Models
             SearchQuery = pagedRequest.SearchQuery;
             Where = pagedRequest.Where;
             PagedRequests = pagedRequest.PagedRequests;
+            PredicateOperator = pagedRequest.PredicateOperator;
             ReturnQuery = false;
             ReturnResults = true;
         }
