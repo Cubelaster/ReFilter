@@ -16,8 +16,6 @@ namespace ReFilter.Models
         /// </summary>
         public JObject Where { get; set; }
 
-        //public JsonDocument Conditions { get; set; }
-
         /// <summary>
         /// Defines rules for sorting and filtering
         /// Can be left empty and in such way, the default values are used.
@@ -30,6 +28,11 @@ namespace ReFilter.Models
         /// </summary>
         public string SearchQuery { get; set; }
 
+        /// <summary>
+        /// If you need to filter by multiple incompatible filters, this is the easiest way to do it <para />
+        /// Depending on <see cref="PredicateOperator"/> set in parent BasePagedRequest, child requests are added either as AND or OR clauses <para />
+        /// Predicate is being built the same way every time so you are able to chain multiple complex filters
+        /// </summary>
         public List<PagedRequest> PagedRequests { get; set; }
 
         public PagedRequest GetPagedRequest(bool returnQuery = true, bool returnResults = false)
