@@ -1,17 +1,16 @@
 # ReFilter
 
-## A Package supporting Filtering and Pagination
+## A Package supporting Filtering, Sorting and Pagination
 
-This package is meant to support basic and advanced filtering, sorting and pagination scenarios for any queryable list or Entity Framework.  
-Basic features include search over string properties, filtering by built in mechanism or explicit custom filter definition, sorting by built in mechanism or explicit custom sort definition and finally pagination of results.
+This package is designed to facilitate both basic and advanced filtering, sorting, and pagination for queryable entities, including lists, arrays, and IQueryable  
+It's meant to be used with EntityFramework and CodeFirst approach, although it will work with all other approaches as well.  
+Filtering and sorting support simple property based scenarios or advanced override scenarios.  
+Search feature uses attributes to determine which properties to do a search against and builds a ready to use OR predicate.  
 
 To use it, you should inject it inside Startup.cs like so:
 
 ```cs
     services.AddReFilter(typeof(ReFilterConfigBuilder));
-
-    services.TryAddScoped<UserFilterBuilder>();
-    services.TryAddScoped<UserSortBuilder>();
 ```
 
 This tells your DI to include the ReFilter bootstraper.  
@@ -43,8 +42,8 @@ Main parts are Where, PropertyFilterConfigs and SearchQuery. The rest gets popul
 
 ```cs
         /// <summary>
-        /// Where object for 1:1 mapping to entity to be filtered.
-        /// Only requirenment is that property names are same
+        /// Object meant for mapping into query conditions.
+        /// Only requirenment is that property names match destination
         /// </summary>
         public JObject Where { get; set; }
 
@@ -59,6 +58,13 @@ Main parts are Where, PropertyFilterConfigs and SearchQuery. The rest gets popul
         /// String SearchQuery meant for searching ANY of the tagged property
         /// </summary>
         public string SearchQuery { get; set; }
+
+        /// <summary>
+        /// If you need to filter by multiple incompatible filters, this is the easiest way to do it <para />
+        /// Depending on <see cref="PredicateOperator"/> set in parent BasePagedRequest, child requests are added either as AND or OR clauses <para />
+        /// Predicate is being built the same way every time so you are able to chain multiple complex filters
+        /// </summary>
+        public List<PagedRequest> PagedRequests { get; set; }
 ```
 
 ## Features
@@ -66,11 +72,10 @@ Main parts are Where, PropertyFilterConfigs and SearchQuery. The rest gets popul
 ### Pagination
 
 Pagination is a basic feature so lets start with it.
-It's all based on `BasePagedRequest`.  
+It's all based on the root `BasePagedRequest` and any following `PagedRequests` are ignored when Pagination is concearned.  
 Basic params are `PageIndex` and `PageSize`.  
 Index starts with 0.
-It's enought to use the basic request from example and call any version of `GetPaged` from IReFilterActions. 
-Pagination is applied as the last step, after setting up any filters and sorts to get the correct results.
+It's enought to use the basic request from example and call any version of `GetPaged` from IReFilterActions.
 
 ```cs
     new BasePagedRequest
@@ -82,7 +87,7 @@ Pagination is applied as the last step, after setting up any filters and sorts t
 
 ### Search
 
-Search makes it possible to search over chosen string properties and fetch results. It's case insensitive and uses `OperatorComparer.Contains` mechanism.  
+Search makes it possible to search over chosen string properties and fetch results. It's case insensitive and uses `OperatorComparer.Contains` mechanism using every property as OR clause.  
 Setting up Search is quite easy and only requires setting an attribute over a property on _database_ model:
 
 ```cs
@@ -97,22 +102,30 @@ To trigger Search you need to pass the `SearchQuery` value to ReFilter query and
 
 Since V.1.1.0 it is possible to use Search values inside child entites and child collections.  
 ReFilter recognizes any object or array type marked with "UsedForSearchQuery" as another branch for going through Search value.
-String search is expensive and going through a tree of entites searching for a string is very expensive. 
+String search is expensive and going through a tree of entites searching for a string is very expensive.
 Search itself is combined as an OR clause but is combined with every other feature as an AND clause.  
-Pending: Custom search provider in form of a Func<T, bool>.
+Pending: Custom search provider in form of an `Expression<Func<T, bool>>` => this would make search use custom implementation when desired (not only `OperatorComparer.Contains`).
 
 ### Filtering
 
-Filtering is achieved by using a `Where` property, combined with `PropertyFilterConfigs`, from `BasePagedRequest`.  
+Filtering is achieved by a combination of `Where` property and `PropertyFilterConfigs`.  
 If `PropertyFilterConfigs` is omitted then default filtering parameters are used: `OperatorComparer.Contains` for string and `OperatorComparer.Equals` for everything else.  
-Where is any arbitrary object you want.  
-Special case is `RangeFilter` which filters out by provided range and falls back to basic property filtering.  
-All the filter options froem `OperatorComparer` use built in `ExpressionType` values such as: Contains, StartsWith, EndsWith, Equals, GreaterThan, LessThan, etc. .
+If `Where` is omitted then the filtering is based on `PropertyFilterConfigs`.  
+Where is any arbitrary object but the keys used for it have to match the model which you want to filter.  
+That means if you have a list of `User` objects, you want your `Where` to be a replica of nullable `User` object. The most correct way to think about it is `Partial<User>` from TypeScript.  
+Special case is `RangeFilter` which filters out by provided range and falls back to basic property filtering. It essentially unpacks into `PropertyFilterConfigs`.  
+All the filter options from `OperatorComparer` use valid built in `ExpressionType` values such as: Contains, StartsWith, EndsWith, Equals, GreaterThan, LessThan, etc. .
 
-The main thing to understand when using Filtering and Sorting is that you _probably_ need a "container" object which mimics a part or the complete database model but has nullable properties in order to filter only by selected ones. That's because in most real life cases your database model has some required, non nullable, properties which then evaluate to `default` values when the new object is created.  
-This makes it impossible to deduce which are the real filter values because null is the only "not set" value as such.
+Since V.2.0.0 filtering received a major refactor and supports pretty much everything you can think of.  
+The most important change was the introduction of `OR` option for filtering. Previously, with the exception of Search, all the filtering was done using `AND` clause. That did not reflect the real world needs and had to be upgraded.  
+Because of that a new property was introduced: `PredicateOperator` on `BasePagedRequest` and `PropertyFilterConfigs`; with options of `AND` or `OR`.  
+This means that you can use `BasePagedRequest` to wrap filtering by properties or special filters in a selected clause but properties themselves can have multiple AND/OR filters on them.  
+Not only that but you can send multiple `BasePagedRequest` objects with different filters and choose to build either clause.  
+The `Where` object is no longer necessary but it's still the simplest way to use ReFilter and a major syntactic sugar. I plan to always support this feature.  
+While it can still be used the same way as previously, the base of filtering bacame `PropertyFilterConfigs` because it carries the information about the `OperatorComparer`, the `Value` used to filter/compare against and the `PredicateOperator` to be used. 
 
-Example from test project:
+There are real life examples inside test project and I plan to add even more meaningful examples.  
+Example of a model to filter over and matching IReFilterRequest used as Where from test project:
 
 ```cs
     class School
@@ -147,8 +160,9 @@ Example from test project:
         public CountryFilterRequest Country { get; set; }
 
         public List<string> Contacts { get; set; }
+        
         [ReFilterProperty(HasSpecialFilter = true)]
-        public List<Student> Students { get; set; }
+        public List<string> StudentNames { get; set; }
 
         public RangeFilter<double> Age { get; set; }
 
@@ -159,9 +173,11 @@ Example from test project:
     }
 ```
 
-Immediately Id is a problem. It will never be null. Any time you instantiate a `School` object, Id will be 0 or any other value, meaning that it can't really be skipped when filtering.  
-That's why the FilterRequest version has every property as nullable. As such, any value it gets is used for filtering and there can be no doubt.  
-This is not a rule, but it's the most common case. If you need a property to always be defined you are free to set it up that way. If you don't need a nullable object for a filter, you don't need to set it up explicitly inside `ReFilterConfigBuilder`, meaning your `GetMatchingType` would fallback to default case.
+When generating filters property by property, we need to know which property to filter by.  
+When sending an object that has some properties set, we know to use those properties as filters. But in the case of sending a default School object, the Id would always have a value, even if default one. A default value is a valid value so we can't ignore it and it can never be null and therefore it can't be skipped when filtering.  
+That's why the FilterRequest version has every property as nullable. As such, any value it gets is used for filtering and there can be no doubt about intentions.  
+This is not a rule, but it's the most common case. If you need a property to always be defined you are free to set it up that way. If you don't need a nullable object for a filter, you don't need to set it up explicitly inside `ReFilterConfigBuilder`, meaning your `GetMatchingType` would fallback to default type, in this case School.  
+Additionally, since V.2.0.0 the `Where` in `BasePagedRequest` is no longer necessary and `PropertyFilterConfigs` can be used instead to same effect.
 
 ### Sorting
 
@@ -171,7 +187,7 @@ Sorting also supports for multiple sorts at the same time.
 
 ### Filtering and Sorting Examples
 
-Filtering and Sorting need to be setup in a central place inside your project.
+ReFilter needs to be setup in a central place inside your project.
 For filtering that's your implementation of `IReFilterConfigBuilder` and for sorting it's your implementation of `IReSortConfigBuilder`.  
 Both serve the same purpose: matching nullable objects to database models and are nothing more than "controllers" for redirecting "requests".  
 Both have 2 methods: `GetMatchingType` and `GetMatching[Filter/Sort]Builder`.  
@@ -200,6 +216,11 @@ The minimum implementation (only filter is shown but filter and sort are mirrore
             }
         }
     }
+```
+
+Then, when you have the basics setup, you can use the following:  
+```cs
+    services.AddReFilter(typeof(ReFilterConfigBuilder), typeof(ReSortConfigBuilder));
 ```
 
 Other than the basic sorting and filtering scenarios, there are also advanced ones using custom implementations provided by you.  
@@ -470,7 +491,8 @@ Finally, everything is connected inside `ReFilterConfigBuilder`.
     }
 ```
 
-As a request you would use something like this: 
+As a request you would use something like this:
+
 ```ts
 {
     'Where': {
@@ -490,7 +512,7 @@ As a request you would use something like this:
 }
 ```
 
-Finally, how it all looks inside the service: 
+Finally, <a id="real-life-projection-example"></a>real life example of how it all looks inside the service:
 
 ```cs
     // PagedResult is always the ReFilter result but you can return anything from your method
@@ -624,10 +646,22 @@ Again, it's necessary to configure `UserSortBuilder` in order for everyting to a
     }
 ```
 
+### Projections
+
+Another feature ReFilter "has" is implementing automatic projections.  
+This is important because the query built over the database tables would only select fields needed for materialization, unlike when you would do `.ToList()`.  
+Use of this feature is highly encouraged and made having [AutoMapper's projection feature](https://docs.automapper.org/en/stable/Queryable-Extensions.html) in mind.  
+You can see examples of manual projection inside test project but [real life scenario can be viewed here](#real-life-projection-example).
+
+## Notes
+
+Most of the mechanisms used are public and can be reused in your code. 
+
 ## Pending Features
 
-Some pending features include recursive filtering over related entities along custom filtering and defining AND/OR clauses for specific filters.  
-Those would be breaking changes and it would take some time. 
+- Special SearchQuery => Custom search provider in form of an `Expression<Func<T, bool>>` => this would make search use custom implementation when desired (not only `OperatorComparer.Contains`).
+- SearchQuery in combination with overridable OperationComparers
+- recursive IReFilterRequest filtering over child or parent objects => currently achiavable via special filters but the goal is to filter related objects and link the filter to foreign keys
 
 Additionally, check the Docs folder for examples of FE requests.  
 If needed, I can give you the AgGrid implementation as well.

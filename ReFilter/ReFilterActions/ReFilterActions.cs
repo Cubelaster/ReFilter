@@ -83,7 +83,7 @@ namespace ReFilter.ReFilterActions
                     query = SearchObject(query, pagedRequest);
                 }
 
-                var resultQuery = ApplyPagination<T>(query, pagedRequest);
+                var resultQuery = ApplyPagination(query, pagedRequest);
 
                 result.RowCount = query.Count();
                 result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
