@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using LinqKit;
 using Newtonsoft.Json;
 using ReFilter.Converters;
-using ReFilter.Enums;
 using ReFilter.Extensions;
 using ReFilter.Models;
 using ReFilter.Models.Filtering.Contracts;
@@ -180,14 +179,12 @@ namespace ReFilter.ReFilterActions
                     query = SortObject(query, pagedRequest.PropertyFilterConfigs);
                 }
 
-                if (pagedRequest.Where != null)
+                if (pagedRequest.Where is not null
+                    || (pagedRequest.PagedRequests is not null && pagedRequest.PagedRequests.Any())
+                    || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null)))
                 {
-                    query = FilterObject(query, pagedRequest);
-                }
-
-                if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
-                {
-                    query = SearchObject(query, pagedRequest);
+                    var predicate = FilterObject<T>(pagedRequest);
+                    query = query.Where(predicate);
                 }
 
                 result.RowCount = query.Count();
@@ -223,14 +220,12 @@ namespace ReFilter.ReFilterActions
                     query = SortObject(query, pagedRequest.PropertyFilterConfigs);
                 }
 
-                if (pagedRequest.Where != null)
+                if (pagedRequest.Where is not null 
+                    || (pagedRequest.PagedRequests is not null && pagedRequest.PagedRequests.Any())
+                    || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null)))
                 {
-                    query = FilterObject(query, pagedRequest);
-                }
-
-                if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
-                {
-                    query = SearchObject(query, pagedRequest);
+                    var predicate = FilterObject<T>(pagedRequest);
+                    query = query.Where(predicate);
                 }
 
                 result.RowCount = query.Count();
@@ -250,7 +245,7 @@ namespace ReFilter.ReFilterActions
         {
             // We generally want to return everything if we don't set filters
             // true essentially resolves to Where 1=1
-            var conditionsPredicate = PredicateBuilder.New<T>(true);
+            var predicate = PredicateBuilder.New<T>(true);
 
             var filterObjectType = reFilterTypeMatcher.GetMatchingType<T>();
             var filterObject = request.Where.ToObject(filterObjectType, Serializer);
@@ -300,8 +295,8 @@ namespace ReFilter.ReFilterActions
                         {
                             // RangeFilter setup
                             Type type = pfc.Value.GetType().GetGenericArguments()[0];
-                            var methodInfo = GetType().GetMethod(nameof(UnpackRangeFilter))
-                                 .MakeGenericMethod(type);
+                            var methodType = typeof(RangeFilterExtensions).GetMethod(nameof(RangeFilterExtensions.Unpack));
+                            var methodInfo = methodType.MakeGenericMethod(type);
 
                             List<PropertyFilterConfig> newPropertyFilterConfigs = (List<PropertyFilterConfig>)
                                 methodInfo.Invoke(this, new object[] { pfc.Value, pfc });
@@ -351,11 +346,11 @@ namespace ReFilter.ReFilterActions
 
                     if (request.PredicateOperator == PredicateOperator.And)
                     {
-                        conditionsPredicate.And(propertyPredicate);
+                        predicate.And(propertyPredicate);
                     }
                     else
                     {
-                        conditionsPredicate.Or(propertyPredicate);
+                        predicate.Or(propertyPredicate);
                     }
                 }
 
@@ -363,191 +358,223 @@ namespace ReFilter.ReFilterActions
                 foreach (var filterKey in filterKeys.Where(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
                 {
                     var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
-                    var predicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest);
+                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest);
 
-                    predicates.ForEach(predicate =>
+                    specialPredicates.ForEach(specialPredicate =>
                     {
                         if (request.PredicateOperator == PredicateOperator.And)
                         {
-                            conditionsPredicate.And(predicate);
+                            predicate.And(specialPredicate);
                         }
                         else
                         {
-                            conditionsPredicate.Or(predicate);
+                            predicate.Or(specialPredicate);
                         }
                     });
                 }
-
-                query = query.Where(conditionsPredicate);
             }
+
+            if (!string.IsNullOrEmpty(request.SearchQuery))
+            {
+                var searchPredicate = SearchObject<T>(request);
+
+                if (request.PredicateOperator == PredicateOperator.And)
+                {
+                    predicate.And(searchPredicate);
+                }
+                else
+                {
+                    predicate.Or(searchPredicate);
+                }
+            }
+
+            if (request.PagedRequests is not null && request.PagedRequests.Count > 0)
+            {
+                request.PagedRequests.ForEach(pagedRequest =>
+                {
+                    var subPredicate = FilterObject<T>(pagedRequest);
+
+                    if (request.PredicateOperator == PredicateOperator.And)
+                    {
+                        predicate.And(subPredicate);
+                    }
+                    else
+                    {
+                        predicate.Or(subPredicate);
+                    }
+                });
+            }
+
+            query = query.Where(predicate);
 
             return query;
         }
 
-        public List<PropertyFilterConfig> UnpackRangeFilter<U>(RangeFilter<U> rangeFilter, PropertyFilterConfig selectedPfc) where U : struct
+        public Expression<Func<T, bool>> FilterObject<T>(PagedRequest request) where T : class, new()
         {
-            var newPropertyFilterConfigs = new List<PropertyFilterConfig>();
+            // We generally want to return everything if we don't set filters
+            // true essentially resolves to Where 1=1
+            var predicate = PredicateBuilder.New<T>(true);
 
-            var lowValue = rangeFilter.Start;
-            var highValue = rangeFilter.End;
+            var filterObjectType = reFilterTypeMatcher.GetMatchingType<T>();
+            var filterObject = request.Where.ToObject(filterObjectType, Serializer);
 
-            switch (selectedPfc.OperatorComparer)
+            var filterValues = filterObject.GetObjectPropertiesWithValue();
+            var specialFilterProperties = filterObjectType.GetSpecialFilterProperties();
+
+            var filterPfcs = request.PropertyFilterConfigs?
+                .Where(pfc => pfc.Value is not null)
+                .Select(pfc => pfc.PropertyName)
+                ?? new List<string>();
+
+            var filterKeys = filterValues.Keys
+                .Concat(filterPfcs)
+                .ToHashSet();
+
+            if (filterKeys.Any())
             {
-                case OperatorComparer.Equals:
-                    newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                var expressionBuilder = new ReFilterExpressionBuilder.ReFilterExpressionBuilder();
+
+                foreach (var filterKey in filterKeys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                {
+                    var propertyPredicate = PredicateBuilder.New<T>(true);
+
+                    var pfcs = request.PropertyFilterConfigs?
+                        .Where(pfc => pfc.PropertyName == filterKey)?
+                        .Select(pfc =>
+                        {
+                            pfc.Value ??= filterValues[filterKey];
+                            return pfc;
+                        })
+                        .ToList()
+                    ?? new List<PropertyFilterConfig>
                     {
-                        OperatorComparer = OperatorComparer.LessThanOrEqual,
-                        PropertyName = selectedPfc.PropertyName,
-                        Value = lowValue ?? highValue
+                        new PropertyFilterConfig {
+                            PropertyName = filterKey,
+                            Value = filterValues[filterKey],
+                            PredicateOperator = PredicateOperator.And
+                        }
+                    };
+
+                    pfcs.ForEach(pfc =>
+                    {
+                        var pfcPredicate = PredicateBuilder.New<T>(false);
+
+                        if (pfc.Value.GetType().Name == typeof(RangeFilter<>).Name)
+                        {
+                            // RangeFilter setup
+                            Type type = pfc.Value.GetType().GetGenericArguments()[0];
+                            var methodType = typeof(RangeFilterExtensions).GetMethod(nameof(RangeFilterExtensions.Unpack));
+                            var methodInfo = methodType.MakeGenericMethod(type);
+
+                            List<PropertyFilterConfig> newPropertyFilterConfigs = (List<PropertyFilterConfig>)
+                                methodInfo.Invoke(this, new object[] { pfc.Value, pfc });
+
+                            newPropertyFilterConfigs.ForEach(npfc =>
+                            {
+                                // false essentially resolves to Where 1=2
+                                // This should generally not happen but failing the filter is better than showing incorrect data
+                                var pfcPredicate = PredicateBuilder.New<T>(false);
+                                var innerPredicates = expressionBuilder.BuildPredicate<T>(npfc);
+
+                                innerPredicates.ForEach(newpfc =>
+                                {
+                                    pfcPredicate.And(newpfc);
+                                });
+
+                                propertyPredicate.And(pfcPredicate);
+                            });
+                        }
+                        else if (pfc.Value.GetType() is IReFilterRequest)
+                        {
+                            // Recursive build here?
+                            // If we ever want to chain filtering via FilterRequests, here is where we should do it
+                            // And then we would use the IReFilterBuilder.GetForeignKeys here to filter by it
+                        }
+                        else
+                        {
+                            var innerPredicates = expressionBuilder.BuildPredicate<T>(pfc);
+
+                            // Inner predicates are all predicates generated to filter accordingly to a pfc
+                            innerPredicates.ForEach(newpfc =>
+                            {
+                                pfcPredicate.And(newpfc);
+                            });
+
+                            // Different pfcs can be used as And/Or clauses
+                            if (pfc.PredicateOperator == PredicateOperator.And)
+                            {
+                                propertyPredicate.And(pfcPredicate);
+                            }
+                            else
+                            {
+                                propertyPredicate.Or(pfcPredicate);
+                            }
+                        }
                     });
 
-                    newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                    if (request.PredicateOperator == PredicateOperator.And)
                     {
-                        OperatorComparer = OperatorComparer.GreaterThanOrEqual,
-                        PropertyName = selectedPfc.PropertyName,
-                        Value = lowValue ?? highValue
-                    });
-                    break;
-                case OperatorComparer.BetweenExclusive:
-                    if (lowValue != null)
-                    {
-                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                        {
-                            OperatorComparer = OperatorComparer.GreaterThan,
-                            PropertyName = selectedPfc.PropertyName,
-                            Value = lowValue
-                        });
+                        predicate.And(propertyPredicate);
                     }
+                    else
+                    {
+                        predicate.Or(propertyPredicate);
+                    }
+                }
 
-                    if (highValue != null)
-                    {
-                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                        {
-                            OperatorComparer = OperatorComparer.LessThan,
-                            PropertyName = selectedPfc.PropertyName,
-                            Value = highValue
-                        });
-                    }
-                    break;
-                case OperatorComparer.BetweenInclusive:
-                    if (lowValue != null)
-                    {
-                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                        {
-                            OperatorComparer = OperatorComparer.GreaterThanOrEqual,
-                            PropertyName = selectedPfc.PropertyName,
-                            Value = lowValue
-                        });
-                    }
+                // Special properties only support IReFilterRequest, not PropertyFilterConfig
+                foreach (var filterKey in filterKeys.Where(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                {
+                    var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
+                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest);
 
-                    if (highValue != null)
+                    specialPredicates.ForEach(specialPredicate =>
                     {
-                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                        if (request.PredicateOperator == PredicateOperator.And)
                         {
-                            OperatorComparer = OperatorComparer.LessThanOrEqual,
-                            PropertyName = selectedPfc.PropertyName,
-                            Value = highValue
-                        });
-                    }
-                    break;
-                case OperatorComparer.BetweenHigherInclusive:
-                    if (lowValue != null)
-                    {
-                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
+                            predicate.And(specialPredicate);
+                        }
+                        else
                         {
-                            OperatorComparer = OperatorComparer.GreaterThan,
-                            PropertyName = selectedPfc.PropertyName,
-                            Value = lowValue
-                        });
-                    }
-
-                    if (highValue != null)
-                    {
-                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                        {
-                            OperatorComparer = OperatorComparer.LessThanOrEqual,
-                            PropertyName = selectedPfc.PropertyName,
-                            Value = highValue
-                        });
-                    }
-                    break;
-                case OperatorComparer.BetweenLowerInclusive:
-                    if (lowValue != null)
-                    {
-                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                        {
-                            OperatorComparer = OperatorComparer.GreaterThanOrEqual,
-                            PropertyName = selectedPfc.PropertyName,
-                            Value = lowValue
-                        });
-                    }
-
-                    if (highValue != null)
-                    {
-                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                        {
-                            OperatorComparer = OperatorComparer.LessThan,
-                            PropertyName = selectedPfc.PropertyName,
-                            Value = highValue
-                        });
-                    }
-                    break;
-                case OperatorComparer.LessThan:
-                    newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                    {
-                        OperatorComparer = selectedPfc.OperatorComparer,
-                        PropertyName = selectedPfc.PropertyName,
-                        Value = lowValue ?? highValue
+                            predicate.Or(specialPredicate);
+                        }
                     });
-                    break;
-                case OperatorComparer.LessThanOrEqual:
-                    newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                    {
-                        OperatorComparer = selectedPfc.OperatorComparer,
-                        PropertyName = selectedPfc.PropertyName,
-                        Value = lowValue ?? highValue
-                    });
-                    break;
-                case OperatorComparer.GreaterThan:
-                    newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                    {
-                        OperatorComparer = selectedPfc.OperatorComparer,
-                        PropertyName = selectedPfc.PropertyName,
-                        Value = lowValue ?? highValue
-                    });
-                    break;
-                case OperatorComparer.GreaterThanOrEqual:
-                    newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                    {
-                        OperatorComparer = selectedPfc.OperatorComparer,
-                        PropertyName = selectedPfc.PropertyName,
-                        Value = lowValue ?? highValue
-                    });
-                    break;
-                default:
-                    if (lowValue != null)
-                    {
-                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                        {
-                            OperatorComparer = OperatorComparer.GreaterThan,
-                            PropertyName = selectedPfc.PropertyName,
-                            Value = lowValue
-                        });
-                    }
-
-                    if (highValue != null)
-                    {
-                        newPropertyFilterConfigs.Add(new PropertyFilterConfig
-                        {
-                            OperatorComparer = OperatorComparer.LessThan,
-                            PropertyName = selectedPfc.PropertyName,
-                            Value = highValue
-                        });
-                    }
-                    break;
+                }
             }
 
-            return newPropertyFilterConfigs;
+            if (!string.IsNullOrEmpty(request.SearchQuery))
+            {
+                var searchPredicate = SearchObject<T>(request);
+
+                if (request.PredicateOperator == PredicateOperator.And)
+                {
+                    predicate.And(searchPredicate);
+                }
+                else
+                {
+                    predicate.Or(searchPredicate);
+                }
+            }
+
+            if (request.PagedRequests is not null && request.PagedRequests.Count > 0)
+            {
+                request.PagedRequests.ForEach(pagedRequest =>
+                {
+                    var subPredicate = FilterObject<T>(pagedRequest);
+
+                    if (request.PredicateOperator == PredicateOperator.And)
+                    {
+                        predicate.And(subPredicate);
+                    }
+                    else
+                    {
+                        predicate.Or(subPredicate);
+                    }
+                });
+            }
+
+            return predicate;
         }
 
         #endregion Filtering
@@ -581,6 +608,31 @@ namespace ReFilter.ReFilterActions
             }
 
             return query;
+        }
+
+        public Expression<Func<T, bool>> SearchObject<T>(BasePagedRequest request) where T : class, new()
+        {
+            var predicate = PredicateBuilder.New<T>(true);
+
+            List<PropertyInfo> searchableProperties;
+            if (!string.IsNullOrEmpty(request.SearchQuery))
+            {
+                searchableProperties = typeof(T).GetSearchableProperties();
+
+                if (searchableProperties.Any())
+                {
+                    var expressionBuilder = new ReFilterExpressionBuilder.ReFilterExpressionBuilder();
+                    foreach (var property in searchableProperties)
+                    {
+                        var propertyFilterConfig = expressionBuilder.BuildSearchPropertyFilterConfig(property, request.SearchQuery);
+                        var searchExpressions = expressionBuilder.BuildPredicate<T>(propertyFilterConfig);
+
+                        searchExpressions.ForEach(searchExpression => predicate.Or(searchExpression));
+                    }
+                }
+            }
+
+            return predicate;
         }
 
         public async Task<PagedResult<T>> GetBySearchQuery<T>(IQueryable<T> query, BasePagedRequest pagedRequest,

@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using ReFilter.Models;
 
@@ -19,5 +21,7 @@ namespace ReFilter.ReFilterActions
         IQueryable<T> SortObject<T>(IQueryable<T> query, List<PropertyFilterConfig> propertyFilterConfigs) where T : class, new();
         public IQueryable<T> FilterObject<T>(IQueryable<T> query, PagedRequest request) where T : class, new();
         public IQueryable<T> SearchObject<T>(IQueryable<T> query, BasePagedRequest request) where T : class, new();
+        Expression<Func<T, bool>> SearchObject<T>(BasePagedRequest request) where T : class, new();
+        Expression<Func<T, bool>> FilterObject<T>(PagedRequest request) where T : class, new();
     }
 }
