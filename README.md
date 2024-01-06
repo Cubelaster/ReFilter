@@ -662,6 +662,8 @@ Most of the mechanisms used are public and can be reused in your code.
 - Special SearchQuery => Custom search provider in form of an `Expression<Func<T, bool>>` => this would make search use custom implementation when desired (not only `OperatorComparer.Contains`).
 - SearchQuery in combination with overridable OperationComparers
 - recursive IReFilterRequest filtering over child or parent objects => currently achiavable via special filters but the goal is to filter related objects and link the filter to foreign keys
+- use Testcontainers for setup of real database and safer testing
+- create performance tests
 
 Additionally, check the Docs folder for examples of FE requests.  
 If needed, I can give you the AgGrid implementation as well.
