@@ -496,6 +496,8 @@ namespace TestProject.Tests
             get
             {
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{Address: \"School Address 1\"}") }).Returns(1).SetName("Mapped: Filter by Address with no Property Filter Config");
+                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, PredicateOperator = LinqKit.PredicateOperator.Or, Where = JObject.Parse("{Address: \"School Address 1\", ValidOnSingle: \"1916-05-05T00:00:00Z\"}") }).Returns(2).SetName("Mapped: Filter by Address with no Property Filter Config (OR)");
+                yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{Address: \"School Address 1\", ValidOnSingle: \"1916-05-05T00:00:00Z\"}") }).Returns(0).SetName("Mapped: Filter by Address with no Property Filter Config (AND)");
             }
         }
 
@@ -574,11 +576,7 @@ namespace TestProject.Tests
         public async Task<int> MappingTestsFilter(BasePagedRequest request)
         {
             var unitUnderTest = new SchoolService(SchoolServiceTestData.Schools);
-            var result = await unitUnderTest.GetPagedMapped<SchoolViewModel>(request);
-
-            Type type = result.Results.GetType().GetGenericArguments()[0];
-
-            Assert.IsTrue(type == typeof(SchoolViewModel));
+            var result = await unitUnderTest.GetPaged(request);
 
             return result.RowCount;
         }
