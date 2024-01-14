@@ -34,7 +34,7 @@ namespace TestProject.FilterBuilders
             return query;
         }
 
-        public List<Expression<Func<School, bool>>> BuildPredicates(IReFilterRequest filterRequest)
+        public List<Expression<Func<School, bool>>> BuildPredicates(IReFilterRequest filterRequest, IQueryable<School> query = null)
         {
             var filters = GetFilters(filterRequest).ToList();
 
@@ -42,7 +42,7 @@ namespace TestProject.FilterBuilders
 
             filters.ForEach(filter =>
             {
-                expressions.Add(filter.GeneratePredicate());
+                expressions.Add(filter.GeneratePredicate(query));
             });
 
             return expressions;

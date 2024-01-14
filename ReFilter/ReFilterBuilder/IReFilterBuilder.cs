@@ -36,7 +36,7 @@ namespace ReFilter.ReFilterProvider
         /// </summary>
         /// <param name="filterRequest"></param>
         /// <returns></returns>
-        List<Expression<Func<T, bool>>> BuildPredicates(IReFilterRequest filterRequest);
+        List<Expression<Func<T, bool>>> BuildPredicates(IReFilterRequest filterRequest, IQueryable<T> query = null);
         /// <summary>
         /// Gets the list of Ids for the provided filter parameters in order to use it as an "IN ()" clause.
         /// </summary>

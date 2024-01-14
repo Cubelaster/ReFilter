@@ -22,7 +22,7 @@ namespace TestProject.FilterBuilders.SchoolFilters
             return query.Where(s => studentNames.Any(sn => s.Name.Contains(sn)));
         }
 
-        public Expression<Func<School, bool>> GeneratePredicate()
+        public Expression<Func<School, bool>> GeneratePredicate(IQueryable<School> query)
         {
             var basePredicate = PredicateBuilder.New<School>();
             studentNames.ForEach(sn =>
