@@ -358,7 +358,7 @@ namespace ReFilter.ReFilterActions
                 foreach (var filterKey in filterKeys.Where(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
                 {
                     var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
-                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest);
+                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest, query);
 
                     specialPredicates.ForEach(specialPredicate =>
                     {

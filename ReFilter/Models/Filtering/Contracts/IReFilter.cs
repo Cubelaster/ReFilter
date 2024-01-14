@@ -16,6 +16,6 @@ namespace ReFilter.Models.Filtering.Contracts
         /// Generates expression which can be applied later on using either clause
         /// </summary>
         /// <returns></returns>
-        Expression<Func<T, bool>> GeneratePredicate();
+        Expression<Func<T, bool>> GeneratePredicate(IQueryable<T> query = null);
     }
 }
