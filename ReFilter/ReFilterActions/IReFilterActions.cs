@@ -22,6 +22,6 @@ namespace ReFilter.ReFilterActions
         public IQueryable<T> FilterObject<T>(IQueryable<T> query, PagedRequest request) where T : class, new();
         public IQueryable<T> SearchObject<T>(IQueryable<T> query, BasePagedRequest request) where T : class, new();
         Expression<Func<T, bool>> SearchObject<T>(BasePagedRequest request) where T : class, new();
-        Expression<Func<T, bool>> FilterObject<T>(PagedRequest request) where T : class, new();
+        Expression<Func<T, bool>> FilterObject<T>(PagedRequest request, IQueryable<T> query) where T : class, new();
     }
 }

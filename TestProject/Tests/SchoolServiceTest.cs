@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -518,6 +520,28 @@ namespace TestProject.Tests
             }
         }
 
+        public static IEnumerable<TestCaseData> AdvancedTestCases
+        {
+            get
+            {
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            OperatorComparer = OperatorComparer.Contains,
+                            PropertyName = "Name",
+                            Value = "10"
+                        }
+                    }
+                }).Returns(2).SetName("Advanced: Filter by PFC Name(Contains 10)");
+
+            }
+        }
+
         [Test]
         [TestCaseSource(nameof(TestCases))]
         [Parallelizable(ParallelScope.All)]
@@ -591,6 +615,17 @@ namespace TestProject.Tests
         [TestCaseSource(nameof(TestCasesFilter))]
         [Parallelizable(ParallelScope.All)]
         public async Task<int> MappingTestsFilter(BasePagedRequest request)
+        {
+            var unitUnderTest = new SchoolService(SchoolServiceTestData.Schools);
+            var result = await unitUnderTest.GetPaged(request);
+
+            return result.RowCount;
+        }
+
+        [Test]
+        [TestCaseSource(nameof(AdvancedTestCases))]
+        [Parallelizable(ParallelScope.All)]
+        public async Task<int> MappingTestsAdvanced(BasePagedRequest request)
         {
             var unitUnderTest = new SchoolService(SchoolServiceTestData.Schools);
             var result = await unitUnderTest.GetPaged(request);
