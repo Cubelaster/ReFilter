@@ -224,22 +224,7 @@ namespace ReFilter.ReFilterActions
                 {
                     var propertyPredicate = PredicateBuilder.New<T>(true);
 
-                    var pfcs = request.PropertyFilterConfigs?
-                        .Where(pfc => pfc.PropertyName == filterKey)?
-                        .Select(pfc =>
-                        {
-                            pfc.Value ??= filterValues[filterKey];
-                            return pfc;
-                        })
-                        .ToList()
-                    ?? new List<PropertyFilterConfig>
-                    {
-                        new() {
-                            PropertyName = filterKey,
-                            Value = filterValues[filterKey],
-                            PredicateOperator = PredicateOperator.And
-                        }
-                    };
+                    var pfcs = request.GetPropertyFilterConfigs(filterKey, filterValues);
 
                     pfcs.ForEach(pfc =>
                     {
@@ -393,22 +378,7 @@ namespace ReFilter.ReFilterActions
                 {
                     var propertyPredicate = PredicateBuilder.New<T>(true);
 
-                    var pfcs = request.PropertyFilterConfigs?
-                        .Where(pfc => pfc.PropertyName == filterKey)?
-                        .Select(pfc =>
-                        {
-                            pfc.Value ??= filterValues[filterKey];
-                            return pfc;
-                        })
-                        .ToList()
-                    ?? new List<PropertyFilterConfig>
-                    {
-                        new PropertyFilterConfig {
-                            PropertyName = filterKey,
-                            Value = filterValues[filterKey],
-                            PredicateOperator = PredicateOperator.And
-                        }
-                    };
+                    var pfcs = request.GetPropertyFilterConfigs(filterKey, filterValues);
 
                     pfcs.ForEach(pfc =>
                     {
