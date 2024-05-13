@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using LinqKit;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ReFilter.Converters;
 using ReFilter.Extensions;
 using ReFilter.Models;
@@ -57,47 +58,34 @@ namespace ReFilter.ReFilterActions
         /// <returns></returns>
         public async Task<PagedResult<T>> GetPaged<T>(IQueryable<T> query, PagedRequest pagedRequest) where T : class, new()
         {
-            Type objectType = query.FirstOrDefault()?.GetType();
-
-            if (objectType != null)
+            var result = new PagedResult<T>
             {
-                var result = new PagedResult<T>
-                {
-                    PageIndex = pagedRequest.PageIndex,
-                    PageSize = pagedRequest.PageSize,
-                };
+                PageIndex = pagedRequest.PageIndex,
+                PageSize = pagedRequest.PageSize,
+            };
 
-                if (pagedRequest.PropertyFilterConfigs != null
-                    && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
-                {
-                    query = SortObject(query, pagedRequest.PropertyFilterConfigs);
-                }
-
-                if (pagedRequest.Where != null)
-                {
-                    query = FilterObject(query, pagedRequest);
-                }
-
-                if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
-                {
-                    query = SearchObject(query, pagedRequest);
-                }
-
-                var resultQuery = ApplyPagination(query, pagedRequest);
-
-                result.RowCount = query.Count();
-                result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
-
-                result.Results = pagedRequest.ReturnResults ? await Task.FromResult(resultQuery.ToList()) : new List<T>();
-                result.ResultQuery = pagedRequest.ReturnQuery ? resultQuery : null;
-                return result;
+            if (pagedRequest.PropertyFilterConfigs != null
+                && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
+            {
+                query = SortObject(query, pagedRequest.PropertyFilterConfigs);
             }
 
-            return new PagedResult<T>
+            if (pagedRequest.Where is not null
+                || (pagedRequest.PagedRequests is not null && pagedRequest.PagedRequests.Any())
+                || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null)))
             {
-                Results = new List<T>(),
-                ResultQuery = query
-            };
+                var predicate = FilterObject(pagedRequest, query);
+                query = query.Where(predicate);
+            }
+
+            var resultQuery = ApplyPagination(query, pagedRequest);
+
+            result.RowCount = query.Count();
+            result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
+
+            result.Results = pagedRequest.ReturnResults ? await Task.FromResult(resultQuery.ToList()) : new List<T>();
+            result.ResultQuery = pagedRequest.ReturnQuery ? resultQuery : null;
+            return result;
         }
 
         /// <summary>
@@ -111,44 +99,32 @@ namespace ReFilter.ReFilterActions
         /// <returns></returns>
         public async Task<PagedResult<U>> GetPaged<T, U>(IQueryable<T> query, PagedRequest<T, U> pagedRequest) where T : class, new() where U : class, new()
         {
-            Type objectType = query.FirstOrDefault()?.GetType();
-
-            if (objectType != null)
+            var result = new PagedResult<T>
             {
-                var result = new PagedResult<T>
-                {
-                    PageIndex = pagedRequest.PageIndex,
-                    PageSize = pagedRequest.PageSize,
-                };
+                PageIndex = pagedRequest.PageIndex,
+                PageSize = pagedRequest.PageSize,
+            };
 
-                if (pagedRequest.PropertyFilterConfigs != null
-                    && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
-                {
-                    query = SortObject(query, pagedRequest.PropertyFilterConfigs);
-                }
-
-                if (pagedRequest.Where != null)
-                {
-                    query = FilterObject(query, pagedRequest);
-                }
-
-                if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
-                {
-                    query = SearchObject(query, pagedRequest);
-                }
-
-                var resultQuery = ApplyPagination(query, pagedRequest);
-
-                result.RowCount = query.Count();
-                result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
-
-                return await Task.FromResult(result.TransformResult(pagedRequest, resultQuery));
+            if (pagedRequest.PropertyFilterConfigs != null
+                && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
+            {
+                query = SortObject(query, pagedRequest.PropertyFilterConfigs);
             }
 
-            return new PagedResult<U>()
+            if (pagedRequest.Where is not null
+                || (pagedRequest.PagedRequests is not null && pagedRequest.PagedRequests.Any())
+                || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null)))
             {
-                Results = new List<U>()
-            };
+                var predicate = FilterObject(pagedRequest, query);
+                query = query.Where(predicate);
+            }
+
+            var resultQuery = ApplyPagination(query, pagedRequest);
+
+            result.RowCount = query.Count();
+            result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
+
+            return await Task.FromResult(result.TransformResult(pagedRequest, resultQuery));
         }
 
         public IQueryable<T> ApplyPagination<T>(IQueryable<T> query, BasePagedRequest pagedRequest) where T : class, new()
@@ -163,82 +139,60 @@ namespace ReFilter.ReFilterActions
 
         public async Task<PagedResult<T>> GetFiltered<T>(IQueryable<T> query, PagedRequest pagedRequest) where T : class, new()
         {
-            Type objectType = query.FirstOrDefault()?.GetType();
-
-            if (objectType != null)
+            var result = new PagedResult<T>
             {
-                var result = new PagedResult<T>
-                {
-                    PageIndex = pagedRequest.PageIndex,
-                    PageSize = pagedRequest.PageSize,
-                };
+                PageIndex = pagedRequest.PageIndex,
+                PageSize = pagedRequest.PageSize,
+            };
 
-                if (pagedRequest.PropertyFilterConfigs != null
-                    && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
-                {
-                    query = SortObject(query, pagedRequest.PropertyFilterConfigs);
-                }
-
-                if (pagedRequest.Where is not null
-                    || (pagedRequest.PagedRequests is not null && pagedRequest.PagedRequests.Any())
-                    || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null)))
-                {
-                    var predicate = FilterObject<T>(pagedRequest);
-                    query = query.Where(predicate);
-                }
-
-                result.RowCount = query.Count();
-                result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
-
-                result.Results = pagedRequest.ReturnResults ? new List<T>() : await Task.FromResult(query.ToList());
-                result.ResultQuery = pagedRequest.ReturnQuery ? null : query;
-                return result;
+            if (pagedRequest.PropertyFilterConfigs != null
+                && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
+            {
+                query = SortObject(query, pagedRequest.PropertyFilterConfigs);
             }
 
-            return new PagedResult<T>
+            if (pagedRequest.Where is not null
+                || (pagedRequest.PagedRequests is not null && pagedRequest.PagedRequests.Any())
+                || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null)))
             {
-                Results = new List<T>(),
-                ResultQuery = query
-            };
+                var predicate = FilterObject(pagedRequest, query);
+                query = query.Where(predicate);
+            }
+
+            result.RowCount = query.Count();
+            result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
+
+            result.Results = pagedRequest.ReturnResults ? new List<T>() : await Task.FromResult(query.ToList());
+            result.ResultQuery = pagedRequest.ReturnQuery ? null : query;
+            return result;
         }
 
         public async Task<PagedResult<U>> GetFiltered<T, U>(IQueryable<T> query, PagedRequest<T, U> pagedRequest) where T : class, new() where U : class, new()
         {
-            Type objectType = query.FirstOrDefault()?.GetType();
-
-            if (objectType != null)
+            var result = new PagedResult<T>
             {
-                var result = new PagedResult<T>
-                {
-                    PageIndex = pagedRequest.PageIndex,
-                    PageSize = pagedRequest.PageSize,
-                };
+                PageIndex = pagedRequest.PageIndex,
+                PageSize = pagedRequest.PageSize,
+            };
 
-                if (pagedRequest.PropertyFilterConfigs != null
-                    && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
-                {
-                    query = SortObject(query, pagedRequest.PropertyFilterConfigs);
-                }
-
-                if (pagedRequest.Where is not null 
-                    || (pagedRequest.PagedRequests is not null && pagedRequest.PagedRequests.Any())
-                    || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null)))
-                {
-                    var predicate = FilterObject<T>(pagedRequest);
-                    query = query.Where(predicate);
-                }
-
-                result.RowCount = query.Count();
-                result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
-
-                return await Task.FromResult(result.TransformResult(pagedRequest, query));
+            if (pagedRequest.PropertyFilterConfigs != null
+                && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
+            {
+                query = SortObject(query, pagedRequest.PropertyFilterConfigs);
             }
 
-            return new PagedResult<U>
+            if (pagedRequest.Where is not null
+                || (pagedRequest.PagedRequests is not null && pagedRequest.PagedRequests.Any())
+                || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null)))
             {
-                Results = new List<U>(),
-                ResultQuery = null
-            };
+                var predicate = FilterObject(pagedRequest, query);
+                query = query.Where(predicate);
+            }
+
+            result.RowCount = query.Count();
+            result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
+
+            return await Task.FromResult(result.TransformResult(pagedRequest, query));
         }
 
         public IQueryable<T> FilterObject<T>(IQueryable<T> query, PagedRequest request) where T : class, new()
@@ -248,9 +202,178 @@ namespace ReFilter.ReFilterActions
             var predicate = PredicateBuilder.New<T>(true);
 
             var filterObjectType = reFilterTypeMatcher.GetMatchingType<T>();
-            var filterObject = request.Where.ToObject(filterObjectType, Serializer);
+            var filterObject = request.Where?.ToObject(filterObjectType, Serializer);
 
-            var filterValues = filterObject.GetObjectPropertiesWithValue();
+            var filterValues = filterObject?.GetObjectPropertiesWithValue() ?? new Dictionary<string, object>();
+            var specialFilterProperties = filterObjectType.GetSpecialFilterProperties();
+
+            var filterPfcs = request.PropertyFilterConfigs?
+                .Where(pfc => pfc.Value is not null)
+                .Select(pfc => pfc.PropertyName)
+                ?? new List<string>();
+
+            var filterKeys = filterValues.Keys
+                .Concat(filterPfcs)
+                .ToHashSet();
+
+            if (filterKeys.Any())
+            {
+                var expressionBuilder = new ReFilterExpressionBuilder.ReFilterExpressionBuilder();
+
+                foreach (var filterKey in filterKeys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                {
+                    var propertyPredicate = PredicateBuilder.New<T>(true);
+
+                    var pfcs = request.PropertyFilterConfigs?
+                        .Where(pfc => pfc.PropertyName == filterKey)?
+                        .Select(pfc =>
+                        {
+                            pfc.Value ??= filterValues[filterKey];
+                            return pfc;
+                        })
+                        .ToList()
+                    ?? new List<PropertyFilterConfig>
+                    {
+                        new() {
+                            PropertyName = filterKey,
+                            Value = filterValues[filterKey],
+                            PredicateOperator = PredicateOperator.And
+                        }
+                    };
+
+                    pfcs.ForEach(pfc =>
+                    {
+                        var pfcPredicate = PredicateBuilder.New<T>(false);
+
+                        if (pfc.Value.GetType().Name == typeof(RangeFilter<>).Name)
+                        {
+                            // RangeFilter setup
+                            Type type = pfc.Value.GetType().GetGenericArguments()[0];
+                            var methodType = typeof(RangeFilterExtensions).GetMethod(nameof(RangeFilterExtensions.Unpack));
+                            var methodInfo = methodType.MakeGenericMethod(type);
+
+                            List<PropertyFilterConfig> newPropertyFilterConfigs = (List<PropertyFilterConfig>)
+                                methodInfo.Invoke(this, new object[] { pfc.Value, pfc });
+
+                            newPropertyFilterConfigs.ForEach(npfc =>
+                            {
+                                // false essentially resolves to Where 1=2
+                                // This should generally not happen but failing the filter is better than showing incorrect data
+                                var pfcPredicate = PredicateBuilder.New<T>(false);
+                                var innerPredicates = expressionBuilder.BuildPredicate<T>(npfc);
+
+                                innerPredicates.ForEach(newpfc =>
+                                {
+                                    pfcPredicate.And(newpfc);
+                                });
+
+                                propertyPredicate.And(pfcPredicate);
+                            });
+                        }
+                        else if (pfc.Value.GetType() is IReFilterRequest)
+                        {
+                            // Recursive build here?
+                            // If we ever want to chain filtering via FilterRequests, here is where we should do it
+                            // And then we would use the IReFilterBuilder.GetForeignKeys here to filter by it
+                        }
+                        else
+                        {
+                            var innerPredicates = expressionBuilder.BuildPredicate<T>(pfc);
+
+                            // Inner predicates are all predicates generated to filter accordingly to a pfc
+                            innerPredicates.ForEach(newpfc =>
+                            {
+                                pfcPredicate.And(newpfc);
+                            });
+
+                            // Different pfcs can be used as And/Or clauses
+                            if (pfc.PredicateOperator == PredicateOperator.And)
+                            {
+                                propertyPredicate.And(pfcPredicate);
+                            }
+                            else
+                            {
+                                propertyPredicate.Or(pfcPredicate);
+                            }
+                        }
+                    });
+
+                    if (request.PredicateOperator == PredicateOperator.And)
+                    {
+                        predicate.And(propertyPredicate);
+                    }
+                    else
+                    {
+                        predicate.Or(propertyPredicate);
+                    }
+                }
+
+                // Special properties only support IReFilterRequest, not PropertyFilterConfig
+                foreach (var filterKey in filterKeys.Where(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                {
+                    var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
+                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest, query);
+
+                    specialPredicates.ForEach(specialPredicate =>
+                    {
+                        if (request.PredicateOperator == PredicateOperator.And)
+                        {
+                            predicate.And(specialPredicate);
+                        }
+                        else
+                        {
+                            predicate.Or(specialPredicate);
+                        }
+                    });
+                }
+            }
+
+            if (!string.IsNullOrEmpty(request.SearchQuery))
+            {
+                var searchPredicate = SearchObject<T>(request);
+
+                if (request.PredicateOperator == PredicateOperator.And)
+                {
+                    predicate.And(searchPredicate);
+                }
+                else
+                {
+                    predicate.Or(searchPredicate);
+                }
+            }
+
+            if (request.PagedRequests is not null && request.PagedRequests.Count > 0)
+            {
+                request.PagedRequests.ForEach(pagedRequest =>
+                {
+                    var subPredicate = FilterObject(pagedRequest, query);
+
+                    if (request.PredicateOperator == PredicateOperator.And)
+                    {
+                        predicate.And(subPredicate);
+                    }
+                    else
+                    {
+                        predicate.Or(subPredicate);
+                    }
+                });
+            }
+
+            query = query.Where(predicate);
+
+            return query;
+        }
+
+        public Expression<Func<T, bool>> FilterObject<T>(PagedRequest request, IQueryable<T> query) where T : class, new()
+        {
+            // We generally want to return everything if we don't set filters
+            // true essentially resolves to Where 1=1
+            var predicate = PredicateBuilder.New<T>(true);
+
+            var filterObjectType = reFilterTypeMatcher.GetMatchingType<T>();
+            var filterObject = request.Where?.ToObject(filterObjectType, Serializer);
+
+            var filterValues = filterObject?.GetObjectPropertiesWithValue() ?? new Dictionary<string, object>();
             var specialFilterProperties = filterObjectType.GetSpecialFilterProperties();
 
             var filterPfcs = request.PropertyFilterConfigs?
@@ -392,176 +515,7 @@ namespace ReFilter.ReFilterActions
             {
                 request.PagedRequests.ForEach(pagedRequest =>
                 {
-                    var subPredicate = FilterObject<T>(pagedRequest);
-
-                    if (request.PredicateOperator == PredicateOperator.And)
-                    {
-                        predicate.And(subPredicate);
-                    }
-                    else
-                    {
-                        predicate.Or(subPredicate);
-                    }
-                });
-            }
-
-            query = query.Where(predicate);
-
-            return query;
-        }
-
-        public Expression<Func<T, bool>> FilterObject<T>(PagedRequest request) where T : class, new()
-        {
-            // We generally want to return everything if we don't set filters
-            // true essentially resolves to Where 1=1
-            var predicate = PredicateBuilder.New<T>(true);
-
-            var filterObjectType = reFilterTypeMatcher.GetMatchingType<T>();
-            var filterObject = request.Where.ToObject(filterObjectType, Serializer);
-
-            var filterValues = filterObject.GetObjectPropertiesWithValue();
-            var specialFilterProperties = filterObjectType.GetSpecialFilterProperties();
-
-            var filterPfcs = request.PropertyFilterConfigs?
-                .Where(pfc => pfc.Value is not null)
-                .Select(pfc => pfc.PropertyName)
-                ?? new List<string>();
-
-            var filterKeys = filterValues.Keys
-                .Concat(filterPfcs)
-                .ToHashSet();
-
-            if (filterKeys.Any())
-            {
-                var expressionBuilder = new ReFilterExpressionBuilder.ReFilterExpressionBuilder();
-
-                foreach (var filterKey in filterKeys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk)))
-                {
-                    var propertyPredicate = PredicateBuilder.New<T>(true);
-
-                    var pfcs = request.PropertyFilterConfigs?
-                        .Where(pfc => pfc.PropertyName == filterKey)?
-                        .Select(pfc =>
-                        {
-                            pfc.Value ??= filterValues[filterKey];
-                            return pfc;
-                        })
-                        .ToList()
-                    ?? new List<PropertyFilterConfig>
-                    {
-                        new PropertyFilterConfig {
-                            PropertyName = filterKey,
-                            Value = filterValues[filterKey],
-                            PredicateOperator = PredicateOperator.And
-                        }
-                    };
-
-                    pfcs.ForEach(pfc =>
-                    {
-                        var pfcPredicate = PredicateBuilder.New<T>(false);
-
-                        if (pfc.Value.GetType().Name == typeof(RangeFilter<>).Name)
-                        {
-                            // RangeFilter setup
-                            Type type = pfc.Value.GetType().GetGenericArguments()[0];
-                            var methodType = typeof(RangeFilterExtensions).GetMethod(nameof(RangeFilterExtensions.Unpack));
-                            var methodInfo = methodType.MakeGenericMethod(type);
-
-                            List<PropertyFilterConfig> newPropertyFilterConfigs = (List<PropertyFilterConfig>)
-                                methodInfo.Invoke(this, new object[] { pfc.Value, pfc });
-
-                            newPropertyFilterConfigs.ForEach(npfc =>
-                            {
-                                // false essentially resolves to Where 1=2
-                                // This should generally not happen but failing the filter is better than showing incorrect data
-                                var pfcPredicate = PredicateBuilder.New<T>(false);
-                                var innerPredicates = expressionBuilder.BuildPredicate<T>(npfc);
-
-                                innerPredicates.ForEach(newpfc =>
-                                {
-                                    pfcPredicate.And(newpfc);
-                                });
-
-                                propertyPredicate.And(pfcPredicate);
-                            });
-                        }
-                        else if (pfc.Value.GetType() is IReFilterRequest)
-                        {
-                            // Recursive build here?
-                            // If we ever want to chain filtering via FilterRequests, here is where we should do it
-                            // And then we would use the IReFilterBuilder.GetForeignKeys here to filter by it
-                        }
-                        else
-                        {
-                            var innerPredicates = expressionBuilder.BuildPredicate<T>(pfc);
-
-                            // Inner predicates are all predicates generated to filter accordingly to a pfc
-                            innerPredicates.ForEach(newpfc =>
-                            {
-                                pfcPredicate.And(newpfc);
-                            });
-
-                            // Different pfcs can be used as And/Or clauses
-                            if (pfc.PredicateOperator == PredicateOperator.And)
-                            {
-                                propertyPredicate.And(pfcPredicate);
-                            }
-                            else
-                            {
-                                propertyPredicate.Or(pfcPredicate);
-                            }
-                        }
-                    });
-
-                    if (request.PredicateOperator == PredicateOperator.And)
-                    {
-                        predicate.And(propertyPredicate);
-                    }
-                    else
-                    {
-                        predicate.Or(propertyPredicate);
-                    }
-                }
-
-                // Special properties only support IReFilterRequest, not PropertyFilterConfig
-                foreach (var filterKey in filterKeys.Where(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
-                {
-                    var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
-                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest);
-
-                    specialPredicates.ForEach(specialPredicate =>
-                    {
-                        if (request.PredicateOperator == PredicateOperator.And)
-                        {
-                            predicate.And(specialPredicate);
-                        }
-                        else
-                        {
-                            predicate.Or(specialPredicate);
-                        }
-                    });
-                }
-            }
-
-            if (!string.IsNullOrEmpty(request.SearchQuery))
-            {
-                var searchPredicate = SearchObject<T>(request);
-
-                if (request.PredicateOperator == PredicateOperator.And)
-                {
-                    predicate.And(searchPredicate);
-                }
-                else
-                {
-                    predicate.Or(searchPredicate);
-                }
-            }
-
-            if (request.PagedRequests is not null && request.PagedRequests.Count > 0)
-            {
-                request.PagedRequests.ForEach(pagedRequest =>
-                {
-                    var subPredicate = FilterObject<T>(pagedRequest);
+                    var subPredicate = FilterObject(pagedRequest, query);
 
                     if (request.PredicateOperator == PredicateOperator.And)
                     {
