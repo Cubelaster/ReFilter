@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using ReFilter.Enums;
 using ReFilter.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using TestProject.Models;
 using TestProject.TestData;
 using TestProject.TestServices;
@@ -501,18 +499,18 @@ namespace TestProject.Tests
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, PredicateOperator = LinqKit.PredicateOperator.Or, Where = JObject.Parse("{Address: \"School Address 1\", ValidOnSingle: \"1916-05-05T00:00:00Z\"}") }).Returns(2).SetName("Mapped: Filter by Address with no Property Filter Config (OR)");
                 yield return new TestCaseData(new BasePagedRequest { PageIndex = 0, PageSize = 10, Where = JObject.Parse("{Address: \"School Address 1\", ValidOnSingle: \"1916-05-05T00:00:00Z\"}") }).Returns(0).SetName("Mapped: Filter by Address with no Property Filter Config (AND)");
                 yield return new TestCaseData(
-                    new BasePagedRequest 
-                    { 
-                        PageIndex = 0, 
-                        PageSize = 10, 
+                    new BasePagedRequest
+                    {
+                        PageIndex = 0,
+                        PageSize = 10,
                         Where = JObject.Parse("{Address: \"School Address 1\"}"),
                         PredicateOperator = LinqKit.PredicateOperator.Or,
-                        PagedRequests = new List<PagedRequest> 
-                        { 
-                            new PagedRequest 
-                            { 
+                        PagedRequests = new List<PagedRequest>
+                        {
+                            new PagedRequest
+                            {
                                 Where = JObject.Parse("{ValidOnSingle: \"1916-05-05T00:00:00Z\"}")
-                            } 
+                            }
                         }
                     })
                     .Returns(2)

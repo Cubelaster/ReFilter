@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Globalization;
-using Newtonsoft.Json;
 
 namespace ReFilter.Converters
 {
@@ -10,12 +10,37 @@ namespace ReFilter.Converters
 
         public override TimeOnly? ReadJson(JsonReader reader, Type objectType, TimeOnly? existingValue, bool hasExistingValue, JsonSerializer serializer)
         {
-            return TimeOnly.ParseExact((string)reader.Value, TimeFormat, CultureInfo.InvariantCulture);
+            // Handle null JSON
+            if (reader.TokenType == JsonToken.Null)
+            {
+                return null;
+            }
+
+            if (reader.TokenType == JsonToken.String)
+            {
+                var str = (string)reader.Value!;
+                if (string.IsNullOrEmpty(str))
+                {
+                    return null;
+                }
+
+                // Parse exact with invariant culture
+                return TimeOnly.ParseExact(str, TimeFormat, CultureInfo.InvariantCulture);
+            }
+
+            return null;
         }
 
         public override void WriteJson(JsonWriter writer, TimeOnly? value, JsonSerializer serializer)
         {
-            writer.WriteValue(value?.ToString(TimeFormat, CultureInfo.InvariantCulture));
+            if (value.HasValue)
+            {
+                writer.WriteValue(value.Value.ToString(TimeFormat, CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                writer.WriteNull();
+            }
         }
     }
 }
