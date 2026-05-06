@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using LinqKit;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using ReFilter.Converters;
 using ReFilter.Extensions;
 using ReFilter.Models;
@@ -162,8 +161,8 @@ namespace ReFilter.ReFilterActions
             result.RowCount = query.Count();
             result.PageCount = (int)Math.Ceiling((double)result.RowCount / pagedRequest.PageSize);
 
-            result.Results = pagedRequest.ReturnResults ? new List<T>() : await Task.FromResult(query.ToList());
-            result.ResultQuery = pagedRequest.ReturnQuery ? null : query;
+            result.Results = pagedRequest.ReturnResults ? await Task.FromResult(query.ToList()) : new List<T>();
+            result.ResultQuery = pagedRequest.ReturnQuery ? query : null;
             return result;
         }
 
@@ -207,6 +206,8 @@ namespace ReFilter.ReFilterActions
             var filterValues = filterObject?.GetObjectPropertiesWithValue() ?? new Dictionary<string, object>();
             var specialFilterProperties = filterObjectType.GetSpecialFilterProperties();
 
+            var propertiesToIgnore = filterObjectType.GetPropertiesToIgnore();
+
             var filterPfcs = request.PropertyFilterConfigs?
                 .Where(pfc => pfc.Value is not null)
                 .Select(pfc => pfc.PropertyName)
@@ -214,6 +215,7 @@ namespace ReFilter.ReFilterActions
 
             var filterKeys = filterValues.Keys
                 .Concat(filterPfcs)
+                .Except(propertiesToIgnore.Select(e => e.Name))
                 .ToHashSet();
 
             if (filterKeys.Any())
@@ -294,7 +296,7 @@ namespace ReFilter.ReFilterActions
                 }
 
                 // Special properties only support IReFilterRequest, not PropertyFilterConfig
-                foreach (var filterKey in filterKeys.Where(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                if (filterKeys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
                 {
                     var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
                     var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest, query);
@@ -361,6 +363,8 @@ namespace ReFilter.ReFilterActions
             var filterValues = filterObject?.GetObjectPropertiesWithValue() ?? new Dictionary<string, object>();
             var specialFilterProperties = filterObjectType.GetSpecialFilterProperties();
 
+            var propertiesToIgnore = filterObjectType.GetPropertiesToIgnore();
+
             var filterPfcs = request.PropertyFilterConfigs?
                 .Where(pfc => pfc.Value is not null)
                 .Select(pfc => pfc.PropertyName)
@@ -368,6 +372,7 @@ namespace ReFilter.ReFilterActions
 
             var filterKeys = filterValues.Keys
                 .Concat(filterPfcs)
+                .Except(propertiesToIgnore.Select(e => e.Name))
                 .ToHashSet();
 
             if (filterKeys.Any())
@@ -448,7 +453,7 @@ namespace ReFilter.ReFilterActions
                 }
 
                 // Special properties only support IReFilterRequest, not PropertyFilterConfig
-                foreach (var filterKey in filterKeys.Where(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                if (filterKeys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
                 {
                     var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
                     var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest, query);

@@ -28,5 +28,12 @@ namespace ReFilter.Extensions
                 .Where(p => p.GetCustomAttributes().OfType<ReFilterProperty>().Any(e => e.HasSpecialSort))
                 .ToList();
         }
+
+        public static List<PropertyInfo> GetPropertiesToIgnore(this Type type)
+        {
+            return type.GetProperties()
+                .Where(p => p.GetCustomAttributes().OfType<ReFilterProperty>().Any(e => e.Ignore))
+                .ToList();
+        }
     }
 }
