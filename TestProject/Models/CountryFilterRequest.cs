@@ -1,6 +1,8 @@
-﻿namespace TestProject.Models
+﻿using ReFilter.Models.Filtering.Contracts;
+
+namespace TestProject.Models
 {
-    public class CountryFilterRequest
+    public class CountryFilterRequest : IReFilterRequest
     {
         public int? Id { get; set; }
         public string Name { get; set; }

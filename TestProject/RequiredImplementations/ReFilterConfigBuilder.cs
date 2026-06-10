@@ -20,6 +20,8 @@ namespace TestProject.RequiredImplementations
             {
                 case Type schoolType when schoolType == typeof(School):
                     return typeof(SchoolFilterRequest);
+                case Type countryType when countryType == typeof(Country):
+                    return typeof(CountryFilterRequest);
                 default:
                     return typeof(T);
             }

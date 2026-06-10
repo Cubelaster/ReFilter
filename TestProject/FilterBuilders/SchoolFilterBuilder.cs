@@ -14,18 +14,18 @@ namespace TestProject.FilterBuilders
 {
     class SchoolFilterBuilder : IReFilterBuilder<School>
     {
-        private IQueryable<School> BuildEntityQuery(IReFilterRequest filterRequest)
+        public IQueryable<School> BuildEntityQuery(IReFilterRequest filterRequest, List<PropertyFilterConfig> propertyFilterConfigs)
         {
             var query = SchoolServiceTestData.Schools.AsQueryable();
 
-            query = BuildFilteredQuery(query, filterRequest);
+            query = BuildFilteredQuery(query, filterRequest, propertyFilterConfigs);
 
             return query;
         }
 
-        private IQueryable<School> BuildFilteredQuery(IQueryable<School> query, IReFilterRequest filterRequest)
+        public IQueryable<School> BuildFilteredQuery(IQueryable<School> query, IReFilterRequest filterRequest, List<PropertyFilterConfig> propertyFilterConfigs)
         {
-            var filters = GetFilters(filterRequest).ToList();
+            var filters = GetFilters(filterRequest, propertyFilterConfigs).ToList();
 
             filters.ForEach(filter =>
             {
@@ -37,19 +37,28 @@ namespace TestProject.FilterBuilders
 
         public List<Expression<Func<School, bool>>> BuildPredicates(IReFilterRequest filterRequest, List<PropertyFilterConfig> propertyFilterConfigs, IQueryable<School> query = null)
         {
-            var filters = GetFilters(filterRequest).ToList();
-
+            var realFilter = filterRequest as SchoolFilterRequest;
+            var filters = GetFilters(filterRequest, propertyFilterConfigs).ToList();
             List<Expression<Func<School, bool>>> expressions = new();
 
-            filters.ForEach(filter =>
+            if (realFilter?.Country != null)
             {
-                expressions.Add(filter.GeneratePredicate(query));
-            });
+                filters.Add(new CountryFilter(realFilter.Country, propertyFilterConfigs?
+                        .Where(p => p.PropertyName.StartsWith("Country."))
+                        .Select(p => new PropertyFilterConfig
+                        {
+                            PropertyName = p.PropertyName["Country.".Length..],
+                            OperatorComparer = p.OperatorComparer,
+                            PredicateOperator = p.PredicateOperator
+                        })
+                        .ToList()));
+            }
 
+            filters.ForEach(filter => expressions.Add(filter.GeneratePredicate(query)));
             return expressions;
         }
 
-        private IEnumerable<IReFilter<School>> GetFilters(IReFilterRequest filterRequest)
+        public IEnumerable<IReFilter<School>> GetFilters(IReFilterRequest filterRequest, List<PropertyFilterConfig> propertyFilterConfigs)
         {
             List<IReFilter<School>> filters = new();
 
@@ -67,6 +76,5 @@ namespace TestProject.FilterBuilders
 
             return filters;
         }
-
     }
 }

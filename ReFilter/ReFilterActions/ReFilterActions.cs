@@ -222,7 +222,7 @@ namespace ReFilter.ReFilterActions
             {
                 var expressionBuilder = new ReFilterExpressionBuilder.ReFilterExpressionBuilder();
 
-                foreach (var filterKey in filterKeys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                foreach (var filterKey in filterKeys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk || fk.StartsWith(sfp.Name + "."))))
                 {
                     var propertyPredicate = PredicateBuilder.New<T>(true);
 
@@ -294,8 +294,8 @@ namespace ReFilter.ReFilterActions
                     }
                 }
 
-                // Special properties only support IReFilterRequest, not PropertyFilterConfig
-                if (filterKeys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                // Special properties: matched by exact name or sub-property prefix (e.g. "Country.Alpha2Code" routes to "Country" builder)
+                if (filterKeys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk || fk.StartsWith(sfp.Name + "."))))
                 {
                     var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
                     var specialPfcs = request.PropertyFilterConfigs?.ToList() ?? new List<PropertyFilterConfig>();
@@ -379,7 +379,7 @@ namespace ReFilter.ReFilterActions
             {
                 var expressionBuilder = new ReFilterExpressionBuilder.ReFilterExpressionBuilder();
 
-                foreach (var filterKey in filterKeys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                foreach (var filterKey in filterKeys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk || fk.StartsWith(sfp.Name + "."))))
                 {
                     var propertyPredicate = PredicateBuilder.New<T>(true);
 
@@ -451,8 +451,8 @@ namespace ReFilter.ReFilterActions
                     }
                 }
 
-                // Special properties only support IReFilterRequest, not PropertyFilterConfig
-                if (filterKeys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                // Special properties: matched by exact name or sub-property prefix (e.g. "Country.Alpha2Code" routes to "Country" builder)
+                if (filterKeys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk || fk.StartsWith(sfp.Name + "."))))
                 {
                     var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
                     var specialPfcs = request.PropertyFilterConfigs?.ToList() ?? new List<PropertyFilterConfig>();

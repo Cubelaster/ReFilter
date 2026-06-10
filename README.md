@@ -156,7 +156,7 @@ Example of a model to filter over and matching IReFilterRequest used as Where fr
         public string Name { get; set; }
         public string Address { get; set; }
 
-        [ReFilterProperty(HasSpecialSort = true)]
+        [ReFilterProperty(HasSpecialFilter = true, HasSpecialSort = true)]
         public CountryFilterRequest Country { get; set; }
 
         public List<string> Contacts { get; set; }
@@ -241,7 +241,7 @@ The advanced custom scenarios are implemented via `IRe[Filter/Sort]Builder`s. Ea
     }
 ```
 
-Helper methods such as `GetFilters`, `BuildEntityQuery`, and `BuildFilteredQuery` are implementation details — keep them **private** in your builder class.
+Helper methods such as `GetFilters`, `BuildEntityQuery`, and `BuildFilteredQuery` are **not part of the interface contract**. They may be public on concrete implementations when other code needs to call them directly (e.g., a sub-entity filter calling `BuildEntityQuery` on a related builder). The interface guarantees only `BuildPredicates`.
 
 A real life example of a UserFilterBuilder will be shown below.  
 We'll start with models and move upwards.  
@@ -514,6 +514,92 @@ Again, it's necessary to configure `UserSortBuilder` in order for everyting to a
     }
 ```
 
+### Sub-entity (Navigation Property) Filtering
+
+When a filter request contains a navigation property filter — e.g. `SchoolFilterRequest.Country` typed as `CountryFilterRequest` — the recommended pattern is an `IReFilter<TParent>` that uses `reFilterActions.FilterObject<TChild>` internally:
+
+1. **Mark the navigation property** in the filter request with `HasSpecialFilter = true`:
+```cs
+[ReFilterProperty(HasSpecialFilter = true, HasSpecialSort = true)]
+public CountryFilterRequest Country { get; set; }
+```
+
+2. **`CountryFilterRequest` implements `IReFilterRequest`** (marker interface, no extra methods) and `ReFilterConfigBuilder.GetMatchingType<Country>()` returns `typeof(CountryFilterRequest)`.
+
+3. **Implement `CountryFilter : IReFilter<School>`** — the filter that translates a country query into a school predicate:
+```cs
+internal class CountryFilter : IReFilter<School>
+{
+    private readonly CountryFilterRequest filterRequest;
+    private readonly List<PropertyFilterConfig> propertyFilterConfigs;
+    private readonly IReFilterActions reFilterActions;
+
+    public CountryFilter(CountryFilterRequest filterRequest, List<PropertyFilterConfig> propertyFilterConfigs)
+    {
+        // Create its own ReFilterActions — no DI circular dependency
+        reFilterActions = new ReFilterActions(new ReFilterConfigBuilder(), new ReSortConfigBuilder());
+        this.filterRequest = filterRequest;
+        this.propertyFilterConfigs = propertyFilterConfigs;
+    }
+
+    public Expression<Func<School, bool>> GeneratePredicate(IQueryable<School> query = null)
+    {
+        // Get a Country queryable (from DB context or test data)
+        var countryQuery = dbContext.Countries.AsQueryable();
+
+        // Value comes from Where (filterRequest); operator comes from PFC (no Value set)
+        var pagedRequest = new PagedRequest
+        {
+            Where = JObject.FromObject(filterRequest),
+            PropertyFilterConfigs = propertyFilterConfigs
+        };
+
+        var filtered = reFilterActions.FilterObject(countryQuery, pagedRequest);
+        var countryIds = filtered.Select(e => e.Id).Distinct().ToList();
+
+        return PredicateBuilder.New<School>(e => countryIds.Contains(e.Country.Id));
+    }
+}
+```
+
+4. **Add the filter in `BuildPredicates`** when the navigation property is set, stripping the property prefix from PFCs:
+```cs
+if (realFilter?.Country != null)
+{
+    filters.Add(new CountryFilter(
+        realFilter.Country,
+        propertyFilterConfigs?
+            .Where(p => p.PropertyName.StartsWith("Country."))
+            .Select(p => new PropertyFilterConfig
+            {
+                PropertyName = p.PropertyName["Country.".Length..],  // "Country.Alpha2Code" → "Alpha2Code"
+                OperatorComparer = p.OperatorComparer,
+                PredicateOperator = p.PredicateOperator
+                // No Value — backfilled from Where by the framework
+            })
+            .ToList()));
+}
+```
+
+5. **Send the request** with value in `Where` and operator in `PropertyFilterConfigs` (no `Value` on the PFC — the framework backfills it from `Where` automatically):
+```ts
+{
+    'Where': {
+        'Country': { 'Alpha2Code': 'DE' }
+    },
+    'PropertyFilterConfigs': [
+        {
+            'PropertyName': 'Country.Alpha2Code',
+            'OperatorComparer': 1  // StartsWith
+        }
+    ]
+}
+```
+
+**Key design principle:** `FilterRequest` (via `Where`) is the bearer of the **value**. `PropertyFilterConfig` is the bearer of the **operator**. Without the filter request value being set, filtering does not happen — the PFC alone is not a guard.
+
+> **Note on `OperatorComparer` default:** The first enum value is `Contains` (= 0), not `Equals`. If you omit the PFC entirely and the framework creates a default one, it will use `Contains`. Always supply an explicit PFC when you need `Equals` behaviour.
+
 ### Projections
 
 Another feature ReFilter "has" is implementing automatic projections.  
@@ -529,7 +615,7 @@ Most of the mechanisms used are public and can be reused in your code.
 
 - Special SearchQuery => Custom search provider in form of an `Expression<Func<T, bool>>` => this would make search use custom implementation when desired (not only `OperatorComparer.Contains`).
 - SearchQuery in combination with overridable OperationComparers
-- recursive IReFilterRequest filtering over child or parent objects => currently achiavable via special filters but the goal is to filter related objects and link the filter to foreign keys
+- Recursive `IReFilterRequest` filtering over child/parent objects — **partially addressed** by the `CountryFilter` pattern (manual `IReFilter<TParent>` + `FilterObject<TChild>`). Future goal: auto-detect navigation property filter requests from attribute metadata and wire sub-entity queries without a dedicated filter class per property.
 - use Testcontainers for setup of real database and safer testing
 - create performance tests
 

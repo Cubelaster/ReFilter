@@ -5,17 +5,11 @@ using ReFilter.Models.Filtering.Contracts;
 using ReFilter.ReSortBuilder;
 using TestProject.Models;
 using TestProject.Models.FilterRequests;
-using TestProject.TestData;
 
 namespace TestProject.SortBuilders
 {
     internal class SchoolSortBuilder : IReSortBuilder<School>
     {
-        private IQueryable<School> BuildEntityQuery()
-        {
-            return SchoolServiceTestData.Schools.AsQueryable();
-        }
-
         public IOrderedQueryable<School> BuildSortedQuery(IQueryable<School> query, PropertyFilterConfig propertyFilterConfig,
             List<PropertyFilterConfig> propertyFilterConfigs, bool isFirst = false)
         {
