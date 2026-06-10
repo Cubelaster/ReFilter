@@ -488,6 +488,48 @@ Again, it's necessary to configure `UserSortBuilder` in order for everyting to a
             return orderedQuery;
         }
 
+        // A helper method to get all the sorters
+        // Not necessary, just a personal choice of streamlining the process
+        private List<IReSort<User>> GetSorters(PropertyFilterConfig propertyFilterConfig)
+        {
+            List<IReSort<User>> sorters = new();
+
+            if (propertyFilterConfig != null)
+            {
+                if (propertyFilterConfig.PropertyName == nameof(UserFilterRequest.FirstName))
+                {
+                    sorters.Add(new FirstNameSorter());
+                }
+
+                if (propertyFilterConfig.PropertyName == nameof(UserFilterRequest.MiddleName))
+                {
+                    sorters.Add(new MiddleNameSorter());
+                }
+
+                if (propertyFilterConfig.PropertyName == nameof(UserFilterRequest.LastName))
+                {
+                    sorters.Add(new LastNameSorter());
+                }
+
+                if (propertyFilterConfig.PropertyName == nameof(UserFilterRequest.Mobile))
+                {
+                    sorters.Add(new MobileSorter());
+                }
+
+                if (propertyFilterConfig.PropertyName == nameof(UserFilterRequest.Phone))
+                {
+                    sorters.Add(new PhoneSorter());
+                }
+
+                if (propertyFilterConfig.PropertyName == nameof(UserFilterRequest.IsActive))
+                {
+                    sorters.Add(new IsActiveSorter());
+                }
+            }
+
+            return sorters;
+        }
+
     }
 ```
 
