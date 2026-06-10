@@ -3,7 +3,7 @@
 ## A Package supporting Filtering, Sorting and Pagination
 
 This package is designed to facilitate both basic and advanced filtering, sorting, and pagination for queryable entities, including lists, arrays, and IQueryable  
-It's meant to be used with EntityFramework and CodeFirst approach, although it will work with all other approaches as well.  
+It targets **.NET 9** and is meant to be used with EntityFramework and CodeFirst approach, although it will work with all other approaches as well.  
 Filtering and sorting support simple property based scenarios or advanced override scenarios.  
 Search feature uses attributes to determine which properties to do a search against and builds a ready to use OR predicate.  
 
@@ -183,7 +183,9 @@ Additionally, since V.2.0.0 the `Where` in `BasePagedRequest` is no longer neces
 
 Sorting is a bit different from Filtering in a way that it only requires `PropertyFilterConfigs` set up correctly.  
 To set them up correctly, the PFC needs to have a `SortDirection` set and `PropertyName` needs to match the case of the property name.  
-Sorting also supports for multiple sorts at the same time.
+Sorting also supports multiple sorts at the same time.
+
+For properties marked with `HasSpecialSort = true`, ReFilter routes the PFC to your `IReSortBuilder<T>` implementation. Routing uses **exact name or prefix matching**, so sending a PFC with `PropertyName = "Country.Alpha2Code"` will route to the `Country` sort builder. The builder receives both the triggering PFC and the full sort PFC list, so it can inspect sub-property configs (e.g. `propertyFilterConfigs.Where(p => p.PropertyName.StartsWith("Country."))`) to drive the sort dynamically rather than hardcoding which sub-property to order by.
 
 ### Filtering and Sorting Examples
 
@@ -224,38 +226,22 @@ Then, when you have the basics setup, you can use the following:
 ```
 
 Other than the basic sorting and filtering scenarios, there are also advanced ones using custom implementations provided by you.  
-The advanced custom scenarions are implemented via `IRe[Filter/Sort]Builder`s. Also, these are the most complicated ones and provide all the options.
+The advanced custom scenarios are implemented via `IRe[Filter/Sort]Builder`s. Each interface has a single required method — the library handles all routing, predicate combination, and pagination itself.
 
 ```cs
     public interface IReFilterBuilder<T> where T : class, new()
     {
         /// <summary>
-        /// Gets all the custom filters and matches them to properties.
+        /// Builds predicates one by one. Predicates are combined as AND/OR clauses by ReFilterActions.
         /// </summary>
-        /// <param name="filterRequest"></param>
-        /// <returns></returns>
-        IEnumerable<IReFilter<T>> GetFilters(IReFilterRequest filterRequest);
-        /// <summary>
-        /// Entry point of filter builder. Builds default query for that entity.
-        /// </summary>
-        /// <param name="filterRequest"></param>
-        /// <returns></returns>
-        IQueryable<T> BuildEntityQuery(IReFilterRequest filterRequest);
-        /// <summary>
-        /// First uses GetFilters and then applies them to the provided query.
-        /// </summary>
-        /// <param name="query"></param>
-        /// <param name="filterRequest"></param>
-        /// <returns></returns>
-        IQueryable<T> BuildFilteredQuery(IQueryable<T> query, IReFilterRequest filterRequest);
-        /// <summary>
-        /// Gets the list of Ids for the provided filter parameters in order to use it as an "IN ()" clause.
-        /// </summary>
-        /// <param name="filterRequest"></param>
-        /// <returns></returns>
-        List<int> GetForeignKeys(IReFilterRequest filterRequest);
+        /// <param name="filterRequest">Typed filter request deserialized from Where.</param>
+        /// <param name="propertyFilterConfigs">All PFCs from the request. Use to branch on OperatorComparer/Value or to find sub-property configs by PropertyName prefix.</param>
+        /// <param name="query">Optional queryable for builders that need to inspect the data source.</param>
+        List<Expression<Func<T, bool>>> BuildPredicates(IReFilterRequest filterRequest, List<PropertyFilterConfig> propertyFilterConfigs, IQueryable<T> query = null);
     }
 ```
+
+Helper methods such as `GetFilters`, `BuildEntityQuery`, and `BuildFilteredQuery` are implementation details — keep them **private** in your builder class.
 
 A real life example of a UserFilterBuilder will be shown below.  
 We'll start with models and move upwards.  
@@ -355,96 +341,18 @@ Finally, everything is connected inside `ReFilterConfigBuilder`.
             this.unitOfWork = unitOfWork;
         }
 
-        public IQueryable<User> BuildEntityQuery(IReFilterRequest filterRequest)
+        // The only method required by the interface.
+        // propertyFilterConfigs carries the full PFC list — use it to branch on OperatorComparer or Value
+        // when a special property needs different behaviour depending on how the caller configured the filter.
+        public List<Expression<Func<User, bool>>> BuildPredicates(IReFilterRequest filterRequest, List<PropertyFilterConfig> propertyFilterConfigs, IQueryable<User> query = null)
         {
-            var query = unitOfWork.GetDbSet<User>().AsQueryable();
-
-            query = BuildFilteredQuery(query, filterRequest);
-
-            return query;
-        }
-
-        public IQueryable<User> BuildFilteredQuery(IQueryable<User> query, IReFilterRequest filterRequest)
-        {
-            var filters = GetFilters(filterRequest).ToList();
-
-            filters.ForEach(filter =>
-            {
-                query = filter.FilterQuery(query);
-            });
-
-            return query;
-        }
-
-        public IEnumerable<IReFilter<User>> GetFilters(IReFilterRequest filterRequest)
-        {
-            List<IReFilter<User>> filters = new List<IReFilter<User>>();
-
-            if (filterRequest == null)
-            {
-                return filters;
-            }
-
             var realFilter = (UserFilterRequest)filterRequest;
-            // Custom filter implementation for these properties
-            if (!string.IsNullOrWhiteSpace(realFilter.FirstName))
-            {
-                filters.Add(new FirstNameFilter(realFilter.FirstName));
-            }
 
-            if (!string.IsNullOrWhiteSpace(realFilter.LastName))
-            {
-                filters.Add(new LastNameFilter(realFilter.LastName));
-            }
-
-            if (!string.IsNullOrWhiteSpace(realFilter.MiddleName))
-            {
-                filters.Add(new MiddleNameFilter(realFilter.MiddleName));
-            }
-
-            if (!string.IsNullOrWhiteSpace(realFilter.Mobile))
-            {
-                filters.Add(new MobileFilter(realFilter.Mobile));
-            }
-
-            if (!string.IsNullOrWhiteSpace(realFilter.Phone))
-            {
-                filters.Add(new PhoneFilter(realFilter.Phone));
-            }
-
-            if (realFilter.RoleId.HasValue)
-            {
-                filters.Add(new RoleFilter(realFilter.RoleId.Value));
-            }
-
-            if (realFilter.IsActive.HasValue)
-            {
-                filters.Add(new IsActiveFilter(realFilter.IsActive.Value));
-            }
-
-            if (realFilter.CompanyId.HasValue)
-            {
-                filters.Add(new CompanyFilter(realFilter.CompanyId.Value));
-            }
-
-            if (realFilter.IsSuperAdmin.HasValue)
-            {
-                filters.Add(new SuperAdminFilter(realFilter.IsSuperAdmin.Value, appSettings.SuperAdminRole));
-            }
-
-            return filters;
+            // Build and return your predicate expressions here.
+            // Use realFilter for values from Where, propertyFilterConfigs for operator/value config.
+            return new List<Expression<Func<User, bool>>>();
         }
 
-        public List<int> GetForeignKeys(IReFilterRequest filterRequest)
-        {
-            var query = unitOfWork.GetDbSet<Customer>().Where(u => u.Status == DatabaseEntityStatus.Active);
-
-            query = BuildFilteredQuery(query, filterRequest);
-
-            return query.Select(e => e.Id)
-               .Distinct()
-               .ToList();
-        }
     }
 ```
 
@@ -555,12 +463,11 @@ Again, it's necessary to configure `UserSortBuilder` in order for everyting to a
             this.unitOfWork = unitOfWork;
         }
 
-        public IQueryable<User> BuildEntityQuery()
-        {
-            return unitOfWork.GetDbSet<User>();
-        }
-
-        public IOrderedQueryable<User> BuildSortedQuery(IQueryable<User> query, PropertyFilterConfig propertyFilterConfig, bool isFirst = false)
+        // The only method required by the interface.
+        // propertyFilterConfig is the triggering PFC (the one whose PropertyName matched this builder).
+        // propertyFilterConfigs is the full sort PFC list — useful when the special property is an object
+        // and sub-properties are sent as separate PFCs (e.g. "Address.City").
+        public IOrderedQueryable<User> BuildSortedQuery(IQueryable<User> query, PropertyFilterConfig propertyFilterConfig, List<PropertyFilterConfig> propertyFilterConfigs, bool isFirst = false)
         {
             var sorters = GetSorters(propertyFilterConfig);
 
@@ -581,45 +488,6 @@ Again, it's necessary to configure `UserSortBuilder` in order for everyting to a
             return orderedQuery;
         }
 
-        public List<IReSort<User>> GetSorters(PropertyFilterConfig propertyFilterConfig)
-        {
-            List<IReSort<User>> sorters = new();
-
-            if (propertyFilterConfig != null)
-            {
-                if (propertyFilterConfig.PropertyName == nameof(UserFilterRequest.FirstName))
-                {
-                    sorters.Add(new FirstNameSorter());
-                }
-
-                if (propertyFilterConfig.PropertyName == nameof(UserFilterRequest.MiddleName))
-                {
-                    sorters.Add(new MiddleNameSorter());
-                }
-
-                if (propertyFilterConfig.PropertyName == nameof(UserFilterRequest.LastName))
-                {
-                    sorters.Add(new LastNameSorter());
-                }
-
-                if (propertyFilterConfig.PropertyName == nameof(UserFilterRequest.Mobile))
-                {
-                    sorters.Add(new MobileSorter());
-                }
-
-                if (propertyFilterConfig.PropertyName == nameof(UserFilterRequest.Phone))
-                {
-                    sorters.Add(new PhoneSorter());
-                }
-
-                if (propertyFilterConfig.PropertyName == nameof(UserFilterRequest.IsActive))
-                {
-                    sorters.Add(new IsActiveSorter());
-                }
-            }
-
-            return sorters;
-        }
     }
 ```
 

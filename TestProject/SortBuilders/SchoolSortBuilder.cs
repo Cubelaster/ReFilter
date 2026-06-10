@@ -11,13 +11,13 @@ namespace TestProject.SortBuilders
 {
     internal class SchoolSortBuilder : IReSortBuilder<School>
     {
-        public IQueryable<School> BuildEntityQuery()
+        private IQueryable<School> BuildEntityQuery()
         {
             return SchoolServiceTestData.Schools.AsQueryable();
         }
 
         public IOrderedQueryable<School> BuildSortedQuery(IQueryable<School> query, PropertyFilterConfig propertyFilterConfig,
-            bool isFirst = false)
+            List<PropertyFilterConfig> propertyFilterConfigs, bool isFirst = false)
         {
             var sorters = GetSorters(propertyFilterConfig);
 
@@ -38,7 +38,7 @@ namespace TestProject.SortBuilders
             return orderedQuery;
         }
 
-        public List<IReSort<School>> GetSorters(PropertyFilterConfig propertyFilterConfig)
+        private List<IReSort<School>> GetSorters(PropertyFilterConfig propertyFilterConfig)
         {
             List<IReSort<School>> sorters = new List<IReSort<School>>();
 

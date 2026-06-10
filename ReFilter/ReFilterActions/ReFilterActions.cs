@@ -696,10 +696,10 @@ namespace ReFilter.ReFilterActions
             IOrderedQueryable<T> orderedQuery;
             string methodName = "";
 
-            if (specialSortProperties.Any(ssp => ssp.Name.Equals(firstSort.PropertyName)))
+            if (specialSortProperties.Any(ssp => ssp.Name.Equals(firstSort.PropertyName) || firstSort.PropertyName.StartsWith(ssp.Name + ".")))
             {
                 var sortBuilder = reSortConfigBuilder.GetMatchingSortBuilder<T>();
-                orderedQuery = sortBuilder.BuildSortedQuery(query, firstSort, true);
+                orderedQuery = sortBuilder.BuildSortedQuery(query, firstSort, realSorts, true);
             }
             else
             {
@@ -709,10 +709,10 @@ namespace ReFilter.ReFilterActions
 
             foreach (var sort in realSorts.Skip(1))
             {
-                if (specialSortProperties.Any(ssp => ssp.Name.Equals(sort.PropertyName)))
+                if (specialSortProperties.Any(ssp => ssp.Name.Equals(sort.PropertyName) || sort.PropertyName.StartsWith(ssp.Name + ".")))
                 {
                     var sortBuilder = reSortConfigBuilder.GetMatchingSortBuilder<T>();
-                    orderedQuery = sortBuilder.BuildSortedQuery(orderedQuery, sort);
+                    orderedQuery = sortBuilder.BuildSortedQuery(orderedQuery, sort, realSorts);
                 }
                 else
                 {
