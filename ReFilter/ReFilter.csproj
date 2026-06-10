@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Cubelaster</Authors>
     <Company>Cubelaster</Company>
@@ -27,9 +28,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="LinqKit" Version="1.1.26" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.10" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="LinqKit" Version="1.3.11" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.6" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
 </Project>
