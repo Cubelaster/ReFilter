@@ -261,7 +261,6 @@ namespace ReFilter.ReFilterActions
                         {
                             // Recursive build here?
                             // If we ever want to chain filtering via FilterRequests, here is where we should do it
-                            // And then we would use the IReFilterBuilder.GetForeignKeys here to filter by it
                         }
                         else
                         {
@@ -299,7 +298,8 @@ namespace ReFilter.ReFilterActions
                 if (filterKeys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
                 {
                     var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
-                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest, query);
+                    var specialPfcs = request.PropertyFilterConfigs?.ToList() ?? new List<PropertyFilterConfig>();
+                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest, specialPfcs, query);
 
                     specialPredicates.ForEach(specialPredicate =>
                     {
@@ -418,7 +418,6 @@ namespace ReFilter.ReFilterActions
                         {
                             // Recursive build here?
                             // If we ever want to chain filtering via FilterRequests, here is where we should do it
-                            // And then we would use the IReFilterBuilder.GetForeignKeys here to filter by it
                         }
                         else
                         {
@@ -456,7 +455,8 @@ namespace ReFilter.ReFilterActions
                 if (filterKeys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
                 {
                     var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
-                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest, query);
+                    var specialPfcs = request.PropertyFilterConfigs?.ToList() ?? new List<PropertyFilterConfig>();
+                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest, specialPfcs, query);
 
                     specialPredicates.ForEach(specialPredicate =>
                     {
