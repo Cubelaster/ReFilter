@@ -399,6 +399,83 @@ namespace TestProject.Tests
                         }
                     }
                 }).Returns(100).SetName("Mapped: Special Filter on StudentName, regular on ValidOnSingle (Or clause)");
+
+                // Country — object-based filter via CountryFilterBuilder routed through FilterObject<Country>
+                // FilterRequest (Where) is the bearer of the value; PFC (no Value) provides the operator
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Country: {Alpha2Code: \"Alpha2Code 1\"}}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            PropertyName = "Country.Alpha2Code",
+                            OperatorComparer = OperatorComparer.Equals
+                        }
+                    }
+                }).Returns(1).SetName("Country.Alpha2Code: Equals");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Country: {Alpha2Code: \"1\"}}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            PropertyName = "Country.Alpha2Code",
+                            OperatorComparer = OperatorComparer.Contains
+                        }
+                    }
+                }).Returns(20).SetName("Country.Alpha2Code: Contains");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Country: {Alpha2Code: \"Alpha2Code 1\"}}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            PropertyName = "Country.Alpha2Code",
+                            OperatorComparer = OperatorComparer.StartsWith
+                        }
+                    }
+                }).Returns(12).SetName("Country.Alpha2Code: StartsWith");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Country: {Alpha2Code: \"1\"}}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            PropertyName = "Country.Alpha2Code",
+                            OperatorComparer = OperatorComparer.NotContains
+                        }
+                    }
+                }).Returns(80).SetName("Country.Alpha2Code: NotContains");
+
+                yield return new TestCaseData(new BasePagedRequest
+                {
+                    PageIndex = 0,
+                    PageSize = 10,
+                    Where = JObject.Parse("{Country: {Alpha2Code: \"Alpha2Code 1\"}}"),
+                    PropertyFilterConfigs = new List<PropertyFilterConfig>
+                    {
+                        new PropertyFilterConfig
+                        {
+                            PropertyName = "Country.Alpha2Code",
+                            OperatorComparer = OperatorComparer.NotEqual
+                        }
+                    }
+                }).Returns(99).SetName("Country.Alpha2Code: NotEqual");
             }
         }
 

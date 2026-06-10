@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using ReFilter.Models;
 using ReFilter.Models.Filtering.Contracts;
-using ReFilter.ReFilterProvider;
+using ReFilter.ReFilterBuilder;
 using TestProject.FilterBuilders.SchoolFilters;
 using TestProject.Models;
 using TestProject.Models.FilterRequests;
@@ -13,18 +14,18 @@ namespace TestProject.FilterBuilders
 {
     class SchoolFilterBuilder : IReFilterBuilder<School>
     {
-        public IQueryable<School> BuildEntityQuery(IReFilterRequest filterRequest)
+        public IQueryable<School> BuildEntityQuery(IReFilterRequest filterRequest, List<PropertyFilterConfig> propertyFilterConfigs)
         {
             var query = SchoolServiceTestData.Schools.AsQueryable();
 
-            query = BuildFilteredQuery(query, filterRequest);
+            query = BuildFilteredQuery(query, filterRequest, propertyFilterConfigs);
 
             return query;
         }
 
-        public IQueryable<School> BuildFilteredQuery(IQueryable<School> query, IReFilterRequest filterRequest)
+        public IQueryable<School> BuildFilteredQuery(IQueryable<School> query, IReFilterRequest filterRequest, List<PropertyFilterConfig> propertyFilterConfigs)
         {
-            var filters = GetFilters(filterRequest).ToList();
+            var filters = GetFilters(filterRequest, propertyFilterConfigs).ToList();
 
             filters.ForEach(filter =>
             {
@@ -34,21 +35,30 @@ namespace TestProject.FilterBuilders
             return query;
         }
 
-        public List<Expression<Func<School, bool>>> BuildPredicates(IReFilterRequest filterRequest, IQueryable<School> query = null)
+        public List<Expression<Func<School, bool>>> BuildPredicates(IReFilterRequest filterRequest, List<PropertyFilterConfig> propertyFilterConfigs, IQueryable<School> query = null)
         {
-            var filters = GetFilters(filterRequest).ToList();
-
+            var realFilter = filterRequest as SchoolFilterRequest;
+            var filters = GetFilters(filterRequest, propertyFilterConfigs).ToList();
             List<Expression<Func<School, bool>>> expressions = new();
 
-            filters.ForEach(filter =>
+            if (realFilter?.Country != null)
             {
-                expressions.Add(filter.GeneratePredicate(query));
-            });
+                filters.Add(new CountryFilter(realFilter.Country, propertyFilterConfigs?
+                        .Where(p => p.PropertyName.StartsWith("Country."))
+                        .Select(p => new PropertyFilterConfig
+                        {
+                            PropertyName = p.PropertyName["Country.".Length..],
+                            OperatorComparer = p.OperatorComparer,
+                            PredicateOperator = p.PredicateOperator
+                        })
+                        .ToList()));
+            }
 
+            filters.ForEach(filter => expressions.Add(filter.GeneratePredicate(query)));
             return expressions;
         }
 
-        public IEnumerable<IReFilter<School>> GetFilters(IReFilterRequest filterRequest)
+        public IEnumerable<IReFilter<School>> GetFilters(IReFilterRequest filterRequest, List<PropertyFilterConfig> propertyFilterConfigs)
         {
             List<IReFilter<School>> filters = new();
 
@@ -65,17 +75,6 @@ namespace TestProject.FilterBuilders
             }
 
             return filters;
-        }
-
-        public List<int> GetForeignKeys(IReFilterRequest filterRequest)
-        {
-            var query = SchoolServiceTestData.Schools.AsQueryable();
-
-            query = BuildFilteredQuery(query, filterRequest);
-
-            return query.Select(e => e.Id)
-                .Distinct()
-                .ToList();
         }
     }
 }

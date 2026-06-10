@@ -13,7 +13,7 @@ namespace TestProject.Models.FilterRequests
         public string Name { get; set; }
         public string Address { get; set; }
 
-        [ReFilterProperty(HasSpecialSort = true)]
+        [ReFilterProperty(HasSpecialFilter = true, HasSpecialSort = true)]
         public CountryFilterRequest Country { get; set; }
 
         public List<string> Contacts { get; set; }

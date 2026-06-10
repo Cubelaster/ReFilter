@@ -1,5 +1,5 @@
 ﻿using System;
-using ReFilter.ReFilterProvider;
+using ReFilter.ReFilterBuilder;
 
 namespace ReFilter.ReFilterTypeMatcher
 {

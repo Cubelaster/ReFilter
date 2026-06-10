@@ -222,7 +222,7 @@ namespace ReFilter.ReFilterActions
             {
                 var expressionBuilder = new ReFilterExpressionBuilder.ReFilterExpressionBuilder();
 
-                foreach (var filterKey in filterKeys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                foreach (var filterKey in filterKeys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk || fk.StartsWith(sfp.Name + "."))))
                 {
                     var propertyPredicate = PredicateBuilder.New<T>(true);
 
@@ -261,7 +261,6 @@ namespace ReFilter.ReFilterActions
                         {
                             // Recursive build here?
                             // If we ever want to chain filtering via FilterRequests, here is where we should do it
-                            // And then we would use the IReFilterBuilder.GetForeignKeys here to filter by it
                         }
                         else
                         {
@@ -295,11 +294,12 @@ namespace ReFilter.ReFilterActions
                     }
                 }
 
-                // Special properties only support IReFilterRequest, not PropertyFilterConfig
-                if (filterKeys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                // Special properties: matched by exact name or sub-property prefix (e.g. "Country.Alpha2Code" routes to "Country" builder)
+                if (filterKeys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk || fk.StartsWith(sfp.Name + "."))))
                 {
                     var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
-                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest, query);
+                    var specialPfcs = request.PropertyFilterConfigs?.ToList() ?? new List<PropertyFilterConfig>();
+                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest, specialPfcs, query);
 
                     specialPredicates.ForEach(specialPredicate =>
                     {
@@ -379,7 +379,7 @@ namespace ReFilter.ReFilterActions
             {
                 var expressionBuilder = new ReFilterExpressionBuilder.ReFilterExpressionBuilder();
 
-                foreach (var filterKey in filterKeys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                foreach (var filterKey in filterKeys.Where(fk => !specialFilterProperties.Any(sfp => sfp.Name == fk || fk.StartsWith(sfp.Name + "."))))
                 {
                     var propertyPredicate = PredicateBuilder.New<T>(true);
 
@@ -418,7 +418,6 @@ namespace ReFilter.ReFilterActions
                         {
                             // Recursive build here?
                             // If we ever want to chain filtering via FilterRequests, here is where we should do it
-                            // And then we would use the IReFilterBuilder.GetForeignKeys here to filter by it
                         }
                         else
                         {
@@ -452,11 +451,12 @@ namespace ReFilter.ReFilterActions
                     }
                 }
 
-                // Special properties only support IReFilterRequest, not PropertyFilterConfig
-                if (filterKeys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk)))
+                // Special properties: matched by exact name or sub-property prefix (e.g. "Country.Alpha2Code" routes to "Country" builder)
+                if (filterKeys.Any(fk => specialFilterProperties.Any(sfp => sfp.Name == fk || fk.StartsWith(sfp.Name + "."))))
                 {
                     var filterBuilder = reFilterTypeMatcher.GetMatchingFilterBuilder<T>();
-                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest, query);
+                    var specialPfcs = request.PropertyFilterConfigs?.ToList() ?? new List<PropertyFilterConfig>();
+                    var specialPredicates = filterBuilder.BuildPredicates(filterObject as IReFilterRequest, specialPfcs, query);
 
                     specialPredicates.ForEach(specialPredicate =>
                     {
@@ -696,10 +696,10 @@ namespace ReFilter.ReFilterActions
             IOrderedQueryable<T> orderedQuery;
             string methodName = "";
 
-            if (specialSortProperties.Any(ssp => ssp.Name.Equals(firstSort.PropertyName)))
+            if (specialSortProperties.Any(ssp => ssp.Name.Equals(firstSort.PropertyName) || firstSort.PropertyName.StartsWith(ssp.Name + ".")))
             {
                 var sortBuilder = reSortConfigBuilder.GetMatchingSortBuilder<T>();
-                orderedQuery = sortBuilder.BuildSortedQuery(query, firstSort, true);
+                orderedQuery = sortBuilder.BuildSortedQuery(query, firstSort, realSorts, true);
             }
             else
             {
@@ -709,10 +709,10 @@ namespace ReFilter.ReFilterActions
 
             foreach (var sort in realSorts.Skip(1))
             {
-                if (specialSortProperties.Any(ssp => ssp.Name.Equals(sort.PropertyName)))
+                if (specialSortProperties.Any(ssp => ssp.Name.Equals(sort.PropertyName) || sort.PropertyName.StartsWith(ssp.Name + ".")))
                 {
                     var sortBuilder = reSortConfigBuilder.GetMatchingSortBuilder<T>();
-                    orderedQuery = sortBuilder.BuildSortedQuery(orderedQuery, sort);
+                    orderedQuery = sortBuilder.BuildSortedQuery(orderedQuery, sort, realSorts);
                 }
                 else
                 {
