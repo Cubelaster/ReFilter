@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using ReFilter.Extensions;
 using ReFilter.Models;
 using ReFilter.Models.Filtering.Contracts;
 using ReFilter.ReFilterBuilder;
@@ -43,15 +44,7 @@ namespace TestProject.FilterBuilders
 
             if (realFilter?.Country != null)
             {
-                filters.Add(new CountryFilter(realFilter.Country, propertyFilterConfigs?
-                        .Where(p => p.PropertyName.StartsWith("Country."))
-                        .Select(p => new PropertyFilterConfig
-                        {
-                            PropertyName = p.PropertyName["Country.".Length..],
-                            OperatorComparer = p.OperatorComparer,
-                            PredicateOperator = p.PredicateOperator
-                        })
-                        .ToList()));
+                filters.Add(new CountryFilter(realFilter.Country, propertyFilterConfigs?.FilterForSubEntity(nameof(Country))));
             }
 
             filters.ForEach(filter => expressions.Add(filter.GeneratePredicate(query)));
