@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using LinqKit;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ReFilter.Converters;
 using ReFilter.Extensions;
 using ReFilter.Models;
@@ -201,7 +202,7 @@ namespace ReFilter.ReFilterActions
             var predicate = PredicateBuilder.New<T>(true);
 
             var filterObjectType = reFilterTypeMatcher.GetMatchingType<T>();
-            var filterObject = request.Where?.ToObject(filterObjectType, Serializer);
+            var filterObject = MergeFilterObject(request.Where, request.PropertyFilterConfigs ?? new List<PropertyFilterConfig>(), filterObjectType);
 
             var filterValues = filterObject?.GetObjectPropertiesWithValue() ?? new Dictionary<string, object>();
             var specialFilterProperties = filterObjectType.GetSpecialFilterProperties();
@@ -358,7 +359,7 @@ namespace ReFilter.ReFilterActions
             var predicate = PredicateBuilder.New<T>(true);
 
             var filterObjectType = reFilterTypeMatcher.GetMatchingType<T>();
-            var filterObject = request.Where?.ToObject(filterObjectType, Serializer);
+            var filterObject = MergeFilterObject(request.Where, request.PropertyFilterConfigs ?? new List<PropertyFilterConfig>(), filterObjectType);
 
             var filterValues = filterObject?.GetObjectPropertiesWithValue() ?? new Dictionary<string, object>();
             var specialFilterProperties = filterObjectType.GetSpecialFilterProperties();
@@ -504,6 +505,32 @@ namespace ReFilter.ReFilterActions
             }
 
             return predicate;
+        }
+
+        // PFC values form the base; Where is merged on top so Where values take precedence on conflict.
+        private object MergeFilterObject(JObject whereJObject, List<PropertyFilterConfig> pfcs, Type filterObjectType)
+        {
+            var merged = new JObject();
+
+            foreach (var pfc in pfcs.Where(p => p.Value != null))
+            {
+                var parts = pfc.PropertyName.Split('.');
+                var current = merged;
+
+                for (int i = 0; i < parts.Length - 1; i++)
+                {
+                    if (current[parts[i]] == null)
+                        current[parts[i]] = new JObject();
+                    current = (JObject)current[parts[i]];
+                }
+
+                current[parts[^1]] = JToken.FromObject(pfc.Value, Serializer);
+            }
+
+            if (whereJObject != null)
+                merged.Merge(whereJObject, new JsonMergeSettings { MergeArrayHandling = MergeArrayHandling.Replace });
+
+            return merged.HasValues ? merged.ToObject(filterObjectType, Serializer) : null;
         }
 
         #endregion Filtering
