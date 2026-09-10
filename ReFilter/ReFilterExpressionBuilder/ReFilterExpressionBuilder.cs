@@ -148,67 +148,89 @@ namespace ReFilter.ReFilterExpressionBuilder
             PropertyInfo childProperty = GetChildProperty(parameter, propertyFilterConfig);
 
             var left = Expression.Property(parameter, childProperty);
-            var coercedValue = CoerceValue(propertyFilterConfig.Value, childProperty.PropertyType);
+
+            if (!TryCoerceValue(propertyFilterConfig.Value, childProperty.PropertyType, out var coercedValue))
+            {
+                // Value can't be represented as the property's type (e.g. a search term that isn't a
+                // valid Guid/number/enum for this property, or a filter value of the wrong shape).
+                // Treat it as a condition that can never match rather than throwing - this is used both
+                // for explicit filters (a bad value should just filter out everything, not 500) and for
+                // free-text search (a term that doesn't fit this property's type should just not match
+                // it, not abort matching every other property).
+                return MakeLambda(parameter, Expression.Constant(false));
+            }
+
             var right = Expression.Constant(coercedValue, childProperty.PropertyType);
             var predicate = BuildComparsion(left, propertyFilterConfig.OperatorComparer.Value, right);
             return MakeLambda(parameter, predicate);
         }
 
         // Value can arrive as whatever CLR type the caller put on the PFC (e.g. a raw string from a
-        // query-string-bound filter targeting a numeric/enum/date property). Expression.Convert only
-        // bridges numeric widening, boxing and Nullable<T> wrapping - it can't parse a string into a
-        // number/enum/Guid/date, so we coerce the value up front and build the Constant with the
-        // property's exact type.
-        private object CoerceValue(object value, Type targetType)
+        // query-string-bound filter, or free search text) targeting a numeric/enum/date property.
+        // Expression.Convert only bridges numeric widening, boxing and Nullable<T> wrapping - it can't
+        // parse a string into a number/enum/Guid/date, so we coerce the value up front and build the
+        // Constant with the property's exact type. Returns false (no exception) when the value cannot
+        // be coerced, so the caller can treat the condition as a non-match instead of failing outright.
+        private bool TryCoerceValue(object value, Type targetType, out object coercedValue)
         {
             if (value == null)
             {
-                return null;
+                coercedValue = null;
+                return true;
             }
 
             var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
             if (underlyingType.IsInstanceOfType(value))
             {
-                return value;
+                coercedValue = value;
+                return true;
             }
 
             try
             {
                 if (underlyingType.IsEnum)
                 {
-                    return value is string enumString
+                    coercedValue = value is string enumString
                         ? Enum.Parse(underlyingType, enumString, ignoreCase: true)
                         : Enum.ToObject(underlyingType, value);
+                    return true;
                 }
 
                 if (underlyingType == typeof(Guid))
                 {
-                    return Guid.Parse(value.ToString());
+                    coercedValue = Guid.Parse(value.ToString());
+                    return true;
                 }
 
                 if (underlyingType == typeof(DateOnly))
                 {
-                    return DateOnly.Parse(value.ToString(), CultureInfo.InvariantCulture);
+                    coercedValue = DateOnly.Parse(value.ToString(), CultureInfo.InvariantCulture);
+                    return true;
                 }
 
                 if (underlyingType == typeof(TimeOnly))
                 {
-                    return TimeOnly.Parse(value.ToString(), CultureInfo.InvariantCulture);
+                    coercedValue = TimeOnly.Parse(value.ToString(), CultureInfo.InvariantCulture);
+                    return true;
                 }
 
                 if (value is IConvertible)
                 {
-                    return Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
+                    coercedValue = Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
+                    return true;
                 }
             }
             catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException or ArgumentException)
             {
-                throw new InvalidCastException(
-                    $"Could not convert filter value '{value}' ({value.GetType().Name}) to '{underlyingType.Name}' for comparison.", ex);
+                coercedValue = null;
+                return false;
             }
 
-            return value;
+            // Not assignable and no recognized coercion path (e.g. a non-IConvertible custom type) -
+            // a mismatch, not something worth guessing at.
+            coercedValue = null;
+            return false;
         }
 
         private Expression BuildComparsion(Expression left, OperatorComparer comparer, Expression right)
