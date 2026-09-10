@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -147,9 +148,67 @@ namespace ReFilter.ReFilterExpressionBuilder
             PropertyInfo childProperty = GetChildProperty(parameter, propertyFilterConfig);
 
             var left = Expression.Property(parameter, childProperty);
-            var right = Expression.Constant(propertyFilterConfig.Value);
+            var coercedValue = CoerceValue(propertyFilterConfig.Value, childProperty.PropertyType);
+            var right = Expression.Constant(coercedValue, childProperty.PropertyType);
             var predicate = BuildComparsion(left, propertyFilterConfig.OperatorComparer.Value, right);
             return MakeLambda(parameter, predicate);
+        }
+
+        // Value can arrive as whatever CLR type the caller put on the PFC (e.g. a raw string from a
+        // query-string-bound filter targeting a numeric/enum/date property). Expression.Convert only
+        // bridges numeric widening, boxing and Nullable<T> wrapping - it can't parse a string into a
+        // number/enum/Guid/date, so we coerce the value up front and build the Constant with the
+        // property's exact type.
+        private object CoerceValue(object value, Type targetType)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+            if (underlyingType.IsInstanceOfType(value))
+            {
+                return value;
+            }
+
+            try
+            {
+                if (underlyingType.IsEnum)
+                {
+                    return value is string enumString
+                        ? Enum.Parse(underlyingType, enumString, ignoreCase: true)
+                        : Enum.ToObject(underlyingType, value);
+                }
+
+                if (underlyingType == typeof(Guid))
+                {
+                    return Guid.Parse(value.ToString());
+                }
+
+                if (underlyingType == typeof(DateOnly))
+                {
+                    return DateOnly.Parse(value.ToString(), CultureInfo.InvariantCulture);
+                }
+
+                if (underlyingType == typeof(TimeOnly))
+                {
+                    return TimeOnly.Parse(value.ToString(), CultureInfo.InvariantCulture);
+                }
+
+                if (value is IConvertible)
+                {
+                    return Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
+                }
+            }
+            catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException or ArgumentException)
+            {
+                throw new InvalidCastException(
+                    $"Could not convert filter value '{value}' ({value.GetType().Name}) to '{underlyingType.Name}' for comparison.", ex);
+            }
+
+            return value;
         }
 
         private Expression BuildComparsion(Expression left, OperatorComparer comparer, Expression right)
@@ -217,11 +276,6 @@ namespace ReFilter.ReFilterExpressionBuilder
             {
                 return Expression.Call(left, compareMethod, right);
             }
-        }
-
-        private Expression NullCheck(Expression toCheck)
-        {
-            return Expression.Not(Expression.Equal(toCheck, Expression.Constant(null, toCheck.Type)));
         }
 
         private Expression MakeLambda(Expression parameter, Expression predicate)
