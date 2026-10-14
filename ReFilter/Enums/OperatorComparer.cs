@@ -21,6 +21,8 @@ namespace ReFilter.Enums
         BetweenInclusive = 96,
         BetweenLowerInclusive = 97,
         BetweenHigherInclusive = 98,
-        CustomFilter = 99
+        CustomFilter = 99,
+        IsEmpty = 100,
+        IsNotEmpty = 101
     }
 }

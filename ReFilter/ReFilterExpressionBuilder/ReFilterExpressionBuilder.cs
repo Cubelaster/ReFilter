@@ -60,7 +60,12 @@ namespace ReFilter.ReFilterExpressionBuilder
         {
             PropertyInfo childProperty = GetChildProperty(parameter, propertyFilterConfig);
 
-            if ((!childProperty.PropertyType.IsByRef && !childProperty.PropertyType.IsClass)
+            if (propertyFilterConfig.IsEmptinessFilter())
+            {
+                // Emptiness applies to the property itself regardless of its type - no recursion into children
+                return new List<Expression> { BuildEmptinessCondition(parameter, childProperty, propertyFilterConfig.OperatorComparer.Value) };
+            }
+            else if ((!childProperty.PropertyType.IsByRef && !childProperty.PropertyType.IsClass)
                 || childProperty.PropertyType.IsValueType || childProperty.PropertyType.Name == "String")
             {
                 // Meant to handle all strings and similar simple stuff
@@ -163,6 +168,59 @@ namespace ReFilter.ReFilterExpressionBuilder
             var right = Expression.Constant(coercedValue, childProperty.PropertyType);
             var predicate = BuildComparsion(left, propertyFilterConfig.OperatorComparer.Value, right);
             return MakeLambda(parameter, predicate);
+        }
+
+        // IsEmpty: strings -> null or "", collections -> null or no elements, everything else -> null.
+        // Non-nullable value types always have a value, so IsEmpty never matches them.
+        // IsNotEmpty is the negation.
+        private Expression BuildEmptinessCondition(Expression parameter, PropertyInfo childProperty, OperatorComparer comparer)
+        {
+            var left = Expression.Property(parameter, childProperty);
+            var propertyType = childProperty.PropertyType;
+
+            Expression isEmpty;
+            if (propertyType == typeof(string))
+            {
+                var isNullOrEmptyMethod = typeof(string).GetMethod(nameof(string.IsNullOrEmpty), new[] { typeof(string) });
+                isEmpty = Expression.Call(isNullOrEmptyMethod, left);
+            }
+            else if (propertyType.IsValueType && Nullable.GetUnderlyingType(propertyType) == null)
+            {
+                isEmpty = Expression.Constant(false);
+            }
+            else if (typeof(IEnumerable).IsAssignableFrom(propertyType) && GetEnumerableElementType(propertyType) is Type elementType)
+            {
+                var anyMethod = typeof(Enumerable).GetMethods()
+                    .Single(m => m.Name == nameof(Enumerable.Any) && m.GetParameters().Length == 1)
+                    .MakeGenericMethod(elementType);
+                isEmpty = Expression.OrElse(
+                    Expression.Equal(left, Expression.Constant(null, propertyType)),
+                    Expression.Not(Expression.Call(anyMethod, left)));
+            }
+            else
+            {
+                isEmpty = Expression.Equal(left, Expression.Constant(null, propertyType));
+            }
+
+            var predicate = comparer == OperatorComparer.IsNotEmpty ? Expression.Not(isEmpty) : isEmpty;
+            return MakeLambda(parameter, predicate);
+        }
+
+        private static Type GetEnumerableElementType(Type type)
+        {
+            if (type.IsArray)
+            {
+                return type.GetElementType();
+            }
+
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            {
+                return type.GenericTypeArguments[0];
+            }
+
+            return type.GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))?
+                .GenericTypeArguments[0];
         }
 
         // Value can arrive as whatever CLR type the caller put on the PFC (e.g. a raw string from a
