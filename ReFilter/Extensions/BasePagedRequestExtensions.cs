@@ -17,9 +17,15 @@ namespace ReFilter.Extensions
                 return existingPfcs
                     .Select(pfc =>
                     {
-                        pfc.Value ??= filterValues[filterKey];
+                        // Key may come only from a value-less IsEmpty/IsNotEmpty PFC, so it's not guaranteed to be in filterValues
+                        if (filterValues.TryGetValue(filterKey, out var filterValue))
+                        {
+                            pfc.Value ??= filterValue;
+                        }
                         return pfc;
                     })
+                    // Skip value-less PFCs (e.g. sort-only) sharing the key with an emptiness filter
+                    .Where(pfc => pfc.Value is not null || pfc.IsEmptinessFilter())
                     .ToList();
             }
             else

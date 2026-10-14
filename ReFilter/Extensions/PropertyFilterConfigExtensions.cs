@@ -1,11 +1,18 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using ReFilter.Enums;
 using ReFilter.Models;
 
 namespace ReFilter.Extensions
 {
     public static class PropertyFilterConfigExtensions
     {
+        // IsEmpty/IsNotEmpty don't carry a value, so they must trigger filtering even when Value is null
+        public static bool IsEmptinessFilter(this PropertyFilterConfig propertyFilterConfig)
+        {
+            return propertyFilterConfig?.OperatorComparer is OperatorComparer.IsEmpty or OperatorComparer.IsNotEmpty;
+        }
+
         public static List<PropertyFilterConfig> FilterForSubEntity(this List<PropertyFilterConfig> originalList, string subPropertyName)
         {
             if (originalList == null)

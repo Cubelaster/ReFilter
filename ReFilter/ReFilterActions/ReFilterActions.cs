@@ -72,7 +72,7 @@ namespace ReFilter.ReFilterActions
 
             if (pagedRequest.Where is not null
                 || (pagedRequest.PagedRequests is not null && pagedRequest.PagedRequests.Any())
-                || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null)))
+                || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null || pfc.IsEmptinessFilter())))
             {
                 var predicate = FilterObject(pagedRequest, query);
                 query = query.Where(predicate);
@@ -113,7 +113,7 @@ namespace ReFilter.ReFilterActions
 
             if (pagedRequest.Where is not null
                 || (pagedRequest.PagedRequests is not null && pagedRequest.PagedRequests.Any())
-                || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null)))
+                || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null || pfc.IsEmptinessFilter())))
             {
                 var predicate = FilterObject(pagedRequest, query);
                 query = query.Where(predicate);
@@ -153,7 +153,7 @@ namespace ReFilter.ReFilterActions
 
             if (pagedRequest.Where is not null
                 || (pagedRequest.PagedRequests is not null && pagedRequest.PagedRequests.Any())
-                || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null)))
+                || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null || pfc.IsEmptinessFilter())))
             {
                 var predicate = FilterObject(pagedRequest, query);
                 query = query.Where(predicate);
@@ -183,7 +183,7 @@ namespace ReFilter.ReFilterActions
 
             if (pagedRequest.Where is not null
                 || (pagedRequest.PagedRequests is not null && pagedRequest.PagedRequests.Any())
-                || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null)))
+                || (pagedRequest.PropertyFilterConfigs is not null && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.Value is not null || pfc.IsEmptinessFilter())))
             {
                 var predicate = FilterObject(pagedRequest, query);
                 query = query.Where(predicate);
@@ -210,7 +210,7 @@ namespace ReFilter.ReFilterActions
             var propertiesToIgnore = filterObjectType.GetPropertiesToIgnore();
 
             var filterPfcs = request.PropertyFilterConfigs?
-                .Where(pfc => pfc.Value is not null)
+                .Where(pfc => pfc.Value is not null || pfc.IsEmptinessFilter())
                 .Select(pfc => pfc.PropertyName)
                 ?? new List<string>();
 
@@ -233,7 +233,7 @@ namespace ReFilter.ReFilterActions
                     {
                         var pfcPredicate = PredicateBuilder.New<T>(false);
 
-                        if (pfc.Value.GetType().Name == typeof(RangeFilter<>).Name)
+                        if (pfc.Value is not null && pfc.Value.GetType().Name == typeof(RangeFilter<>).Name)
                         {
                             // RangeFilter setup
                             Type type = pfc.Value.GetType().GetGenericArguments()[0];
@@ -258,7 +258,7 @@ namespace ReFilter.ReFilterActions
                                 propertyPredicate.And(pfcPredicate);
                             });
                         }
-                        else if (pfc.Value.GetType() is IReFilterRequest)
+                        else if (pfc.Value?.GetType() is IReFilterRequest)
                         {
                             // Recursive build here?
                             // If we ever want to chain filtering via FilterRequests, here is where we should do it
@@ -367,7 +367,7 @@ namespace ReFilter.ReFilterActions
             var propertiesToIgnore = filterObjectType.GetPropertiesToIgnore();
 
             var filterPfcs = request.PropertyFilterConfigs?
-                .Where(pfc => pfc.Value is not null)
+                .Where(pfc => pfc.Value is not null || pfc.IsEmptinessFilter())
                 .Select(pfc => pfc.PropertyName)
                 ?? new List<string>();
 
@@ -390,7 +390,7 @@ namespace ReFilter.ReFilterActions
                     {
                         var pfcPredicate = PredicateBuilder.New<T>(false);
 
-                        if (pfc.Value.GetType().Name == typeof(RangeFilter<>).Name)
+                        if (pfc.Value is not null && pfc.Value.GetType().Name == typeof(RangeFilter<>).Name)
                         {
                             // RangeFilter setup
                             Type type = pfc.Value.GetType().GetGenericArguments()[0];
@@ -415,7 +415,7 @@ namespace ReFilter.ReFilterActions
                                 propertyPredicate.And(pfcPredicate);
                             });
                         }
-                        else if (pfc.Value.GetType() is IReFilterRequest)
+                        else if (pfc.Value?.GetType() is IReFilterRequest)
                         {
                             // Recursive build here?
                             // If we ever want to chain filtering via FilterRequests, here is where we should do it
