@@ -187,6 +187,8 @@ Sorting also supports multiple sorts at the same time.
 
 For properties marked with `HasSpecialSort = true`, ReFilter routes the PFC to your `IReSortBuilder<T>` implementation. Routing uses **exact name or prefix matching**, so sending a PFC with `PropertyName = "Country.Alpha2Code"` will route to the `Country` sort builder. The builder receives both the triggering PFC and the full sort PFC list, so it can inspect sub-property configs (e.g. `propertyFilterConfigs.Where(p => p.PropertyName.StartsWith("Country."))`) to drive the sort dynamically rather than hardcoding which sub-property to order by.
 
+The builder also receives `filterRequest` — the request's `Where` (plus PFC values) deserialized into the matched filter request type, the same object `IReFilterBuilder<T>.BuildPredicates` gets. Use it when sort logic depends on a request value (e.g. a `CompanyId` that selects a per-company configuration). It is `null` when the request carries no `Where`/PFC values, so treat it defensively.
+
 ### Filtering and Sorting Examples
 
 ReFilter needs to be setup in a central place inside your project.
@@ -467,7 +469,8 @@ Again, it's necessary to configure `UserSortBuilder` in order for everyting to a
         // propertyFilterConfig is the triggering PFC (the one whose PropertyName matched this builder).
         // propertyFilterConfigs is the full sort PFC list — useful when the special property is an object
         // and sub-properties are sent as separate PFCs (e.g. "Address.City").
-        public IOrderedQueryable<User> BuildSortedQuery(IQueryable<User> query, PropertyFilterConfig propertyFilterConfig, List<PropertyFilterConfig> propertyFilterConfigs, bool isFirst = false)
+        // filterRequest is the deserialized Where/PFC values (same object the filter builder gets) — null if none were sent.
+        public IOrderedQueryable<User> BuildSortedQuery(IQueryable<User> query, PropertyFilterConfig propertyFilterConfig, List<PropertyFilterConfig> propertyFilterConfigs, IReFilterRequest filterRequest, bool isFirst = false)
         {
             var sorters = GetSorters(propertyFilterConfig);
 

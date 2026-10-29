@@ -11,7 +11,7 @@ namespace TestProject.SortBuilders
     internal class SchoolSortBuilder : IReSortBuilder<School>
     {
         public IOrderedQueryable<School> BuildSortedQuery(IQueryable<School> query, PropertyFilterConfig propertyFilterConfig,
-            List<PropertyFilterConfig> propertyFilterConfigs, bool isFirst = false)
+            List<PropertyFilterConfig> propertyFilterConfigs, IReFilterRequest filterRequest, bool isFirst = false)
         {
             var sorters = GetSorters(propertyFilterConfig);
 

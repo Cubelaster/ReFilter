@@ -67,7 +67,7 @@ namespace ReFilter.ReFilterActions
             if (pagedRequest.PropertyFilterConfigs != null
                 && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
             {
-                query = SortObject(query, pagedRequest.PropertyFilterConfigs);
+                query = SortObject(query, pagedRequest.PropertyFilterConfigs, pagedRequest.Where);
             }
 
             if (pagedRequest.Where is not null
@@ -108,7 +108,7 @@ namespace ReFilter.ReFilterActions
             if (pagedRequest.PropertyFilterConfigs != null
                 && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
             {
-                query = SortObject(query, pagedRequest.PropertyFilterConfigs);
+                query = SortObject(query, pagedRequest.PropertyFilterConfigs, pagedRequest.Where);
             }
 
             if (pagedRequest.Where is not null
@@ -148,7 +148,7 @@ namespace ReFilter.ReFilterActions
             if (pagedRequest.PropertyFilterConfigs != null
                 && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
             {
-                query = SortObject(query, pagedRequest.PropertyFilterConfigs);
+                query = SortObject(query, pagedRequest.PropertyFilterConfigs, pagedRequest.Where);
             }
 
             if (pagedRequest.Where is not null
@@ -178,7 +178,7 @@ namespace ReFilter.ReFilterActions
             if (pagedRequest.PropertyFilterConfigs != null
                 && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
             {
-                query = SortObject(query, pagedRequest.PropertyFilterConfigs);
+                query = SortObject(query, pagedRequest.PropertyFilterConfigs, pagedRequest.Where);
             }
 
             if (pagedRequest.Where is not null
@@ -606,7 +606,7 @@ namespace ReFilter.ReFilterActions
                 if (pagedRequest.PropertyFilterConfigs != null
                     && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
                 {
-                    query = SortObject(query, pagedRequest.PropertyFilterConfigs);
+                    query = SortObject(query, pagedRequest.PropertyFilterConfigs, pagedRequest.Where);
                 }
 
                 if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
@@ -648,7 +648,7 @@ namespace ReFilter.ReFilterActions
                 if (pagedRequest.PropertyFilterConfigs != null
                     && pagedRequest.PropertyFilterConfigs.Any(pfc => pfc.SortDirection.HasValue))
                 {
-                    query = SortObject(query, pagedRequest.PropertyFilterConfigs);
+                    query = SortObject(query, pagedRequest.PropertyFilterConfigs, pagedRequest.Where);
                 }
 
                 if (!string.IsNullOrEmpty(pagedRequest.SearchQuery))
@@ -709,8 +709,23 @@ namespace ReFilter.ReFilterActions
             return (IOrderedQueryable<T>)result;
         }
 
-        public IQueryable<T> SortObject<T>(IQueryable<T> query, List<PropertyFilterConfig> propertyFilterConfigs) where T : class, new()
+        public IQueryable<T> SortObject<T>(IQueryable<T> query, List<PropertyFilterConfig> propertyFilterConfigs, JObject where = null) where T : class, new()
         {
+            // Built lazily - only special sorts need it, and types without them shouldn't require a filter type match.
+            // Built the same way as in FilterObject so sort and filter builders see the same object.
+            IReFilterRequest filterRequest = null;
+            var filterRequestBuilt = false;
+            IReFilterRequest GetFilterRequest()
+            {
+                if (!filterRequestBuilt)
+                {
+                    filterRequest = MergeFilterObject(where, propertyFilterConfigs ?? new List<PropertyFilterConfig>(),
+                        reFilterTypeMatcher.GetMatchingType<T>()) as IReFilterRequest;
+                    filterRequestBuilt = true;
+                }
+                return filterRequest;
+            }
+
             var sortObjectType = reSortConfigBuilder.GetMatchingType<T>();
             var specialSortProperties = sortObjectType.GetSpecialSortProperties();
 
@@ -726,7 +741,7 @@ namespace ReFilter.ReFilterActions
             if (specialSortProperties.Any(ssp => ssp.Name.Equals(firstSort.PropertyName) || firstSort.PropertyName.StartsWith(ssp.Name + ".")))
             {
                 var sortBuilder = reSortConfigBuilder.GetMatchingSortBuilder<T>();
-                orderedQuery = sortBuilder.BuildSortedQuery(query, firstSort, realSorts, true);
+                orderedQuery = sortBuilder.BuildSortedQuery(query, firstSort, realSorts, GetFilterRequest(), true);
             }
             else
             {
@@ -739,7 +754,7 @@ namespace ReFilter.ReFilterActions
                 if (specialSortProperties.Any(ssp => ssp.Name.Equals(sort.PropertyName) || sort.PropertyName.StartsWith(ssp.Name + ".")))
                 {
                     var sortBuilder = reSortConfigBuilder.GetMatchingSortBuilder<T>();
-                    orderedQuery = sortBuilder.BuildSortedQuery(orderedQuery, sort, realSorts);
+                    orderedQuery = sortBuilder.BuildSortedQuery(orderedQuery, sort, realSorts, GetFilterRequest());
                 }
                 else
                 {
